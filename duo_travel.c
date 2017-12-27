@@ -271,7 +271,7 @@ void readStorage(void *destination, int32_t address, int32_t amount) {
     }
 }
 
-void writeStorage(int32_t address, void *source, int32_t amount) {
+void writeStorage(int32_t address, const void *source, int32_t amount) {
     if (amount <= 0) {
         return;
     }

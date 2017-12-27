@@ -21,8 +21,8 @@ DEVICE     = atmega328p
 CLOCK      = 8000000
 PROGRAMMER = -c usbasp
 #PROGRAMMER = -c stk500v2 -P /dev/cu.usbmodem1411
-# OBJECTS    = main.o duo_travel.o editor.o emulator.o core.o machine.o programmer.o
-OBJECTS    = main.o duo_travel.o editor.o emulator.o core.o machine.o
+OBJECTS    = main.o duo_travel.o editor.o emulator.o core.o machine.o programmer.o
+# OBJECTS    = main.o duo_travel.o editor.o emulator.o core.o machine.o
 # OBJECTS    = main.o duo_travel.o programmer.o machine.o
 FUSES      = -U lfuse:w:0xe2:m -U efuse:w:0x04:m -U hfuse:w:0xd9:m
 # avrdude -c usbasp -p atmega328p -B 2 -U flash:w:main.hex:i

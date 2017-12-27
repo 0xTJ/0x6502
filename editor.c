@@ -4,6 +4,7 @@
 #include "duo_travel.h"
 #include "machine.h"
 #include "emulator.h"
+#include "programmer.h"
 
 static void dispEditor(uint16_t addr, uint8_t byte) {
     clearDisplay();
@@ -126,12 +127,38 @@ void editor() {
             addr--;
         }
         else if (tmp_key == KEY_SAVE) {
-            // writeCache();
-        // case KEY_DEL:
-            // ;uint8_t tmpDel = memory[addr];
-            // for (uint16_t i = addr; i < MEM_SIZE - 1; i++)
-                // memory[i] = memory[i + 1];
-            // memory[MEM_SIZE - 1] = tmpDel;
+            const uint16_t comp = (1 << KEY_SAVE) | (1 << KEY_DEL);
+            
+            clearDisplay();
+            char buf1[] = "Hold NEWLINE and";
+            for (int i = 0; i < 16 && buf1[i]; i++)
+                displayCharacter(i, 0, buf1[i]);
+            char buf2[] = "CLEAR to flash";
+            for (int i = 0; i < 16 && buf2[i]; i++)
+                displayCharacter(i, 1, buf2[i]);
+            
+            bool do_flash = true;
+            while (getPressedKeys() != comp) {
+                if (getPressedKey() == KEY_ESCAPE) {
+                    do_flash = false;
+                    break;
+                }
+            }
+            
+            if (do_flash)
+                for (uint8_t i = 0; i < 40; i++) {
+                    _delay_ms(40);
+                    if (getPressedKeys() != comp) {
+                        do_flash = false;
+                        break;
+                    }
+                }
+            if (do_flash)
+                programmer();
+            while (getPressedKey() >= 0);
+        }
+        else if (tmp_key == KEY_DEL) {
+            
         }
         else if (tmp_key == KEY_RUN) {
             is_running = true;
