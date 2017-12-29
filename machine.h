@@ -11,8 +11,6 @@
 #define SPRITE_SIZE (0x0040)
 #define KEYS_ADDR   (0x0280)
 
-#define DEFD_PAGE_COUNT 4
-
 enum PageType { NONE = 0, ROM, RAM, IO };
 
 struct PageDef {
@@ -30,6 +28,9 @@ extern const struct PageDef page_defs[];
 
 void loadPageDefs();
 void resetMachine();
+
+uint8_t read6502(uint16_t address);
+void write6502(uint16_t address, uint8_t value);
 
 extern uint8_t screen_mem[32];
 extern uint8_t sprite_mem[8 * 8];

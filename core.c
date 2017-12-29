@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <avr/pgmspace.h>
-#include "duo_travel.h"
+#include "machine.h"
 
 //externally supplied functions
 extern uint8_t read6502(uint16_t address);
@@ -114,7 +114,8 @@ void reset6502() {
 }
 
 
-static void (*addrtable[256])();
+static const uint8_t addrtable_ref[256];
+static void (*addrtable[13])();
 static const uint8_t optable_ref[256];
 static void (*optable[65])();
 uint8_t penaltyop, penaltyaddr;
@@ -745,25 +746,54 @@ static void tya() {
     #define rra nop
 #endif
 
+static void (*addrtable[13])() = {
+    imp,
+    acc,
+    imm,
+    zp,
+    zpx,
+    zpy,
+    rel,
+    abso,
+    absx,
+    absy,
+    ind,
+    indx,
+    indy
+};
 
-static void (*addrtable[256])() = {
+#define ADDR_IMP 0
+#define ADDR_ACC 1
+#define ADDR_IMM 2
+#define ADDR_ZP 3
+#define ADDR_ZPX 4
+#define ADDR_ZPY 5
+#define ADDR_REL 6
+#define ADDR_ABSO 7
+#define ADDR_ABSX 8
+#define ADDR_ABSY 9
+#define ADDR_IND 10
+#define ADDR_INDX 11
+#define ADDR_INDY 12
+
+static const uint8_t addrtable_ref[256] PROGMEM = {
 /*        |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |     */
-/* 0 */     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 0 */
-/* 1 */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 1 */
-/* 2 */    abso, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 2 */
-/* 3 */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 3 */
-/* 4 */     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 4 */
-/* 5 */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 5 */
-/* 6 */     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm,  ind, abso, abso, abso, /* 6 */
-/* 7 */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 7 */
-/* 8 */     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* 8 */
-/* 9 */     rel, indy,  imp, indy,  zpx,  zpx,  zpy,  zpy,  imp, absy,  imp, absy, absx, absx, absy, absy, /* 9 */
-/* A */     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* A */
-/* B */     rel, indy,  imp, indy,  zpx,  zpx,  zpy,  zpy,  imp, absy,  imp, absy, absx, absx, absy, absy, /* B */
-/* C */     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* C */
-/* D */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* D */
-/* E */     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* E */
-/* F */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx  /* F */
+/* 0 */     ADDR_IMP, ADDR_INDX,  ADDR_IMP, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_ACC,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* 0 */
+/* 1 */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, /* 1 */
+/* 2 */    ADDR_ABSO, ADDR_INDX,  ADDR_IMP, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_ACC,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* 2 */
+/* 3 */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, /* 3 */
+/* 4 */     ADDR_IMP, ADDR_INDX,  ADDR_IMP, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_ACC,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* 4 */
+/* 5 */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, /* 5 */
+/* 6 */     ADDR_IMP, ADDR_INDX,  ADDR_IMP, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_ACC,  ADDR_IMM,  ADDR_IND, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* 6 */
+/* 7 */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, /* 7 */
+/* 8 */     ADDR_IMM, ADDR_INDX,  ADDR_IMM, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_IMP,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* 8 */
+/* 9 */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPY,  ADDR_ZPY,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSY, ADDR_ABSY, /* 9 */
+/* A */     ADDR_IMM, ADDR_INDX,  ADDR_IMM, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_IMP,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* A */
+/* B */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPY,  ADDR_ZPY,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSY, ADDR_ABSY, /* B */
+/* C */     ADDR_IMM, ADDR_INDX,  ADDR_IMM, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_IMP,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* C */
+/* D */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, /* D */
+/* E */     ADDR_IMM, ADDR_INDX,  ADDR_IMM, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_IMP,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* E */
+/* F */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX  /* F */
 };
 
 static void (*optable[65])() = {
@@ -919,7 +949,7 @@ void exec6502(uint32_t tickcount) {
         penaltyop = 0;
         penaltyaddr = 0;
 
-        (*addrtable[opcode])();
+        (*addrtable[pgm_read_byte(addrtable_ref + opcode)])();
         (*optable[pgm_read_byte(optable_ref + opcode)])();
         clockticks6502 += pgm_read_byte(ticktable + opcode);
         if (penaltyop && penaltyaddr) clockticks6502++;
@@ -950,7 +980,7 @@ void step6502() {
     penaltyop = 0;
     penaltyaddr = 0;
 
-    (*addrtable[opcode])();
+    (*addrtable[pgm_read_byte(addrtable_ref + opcode)])();
     (*optable[pgm_read_byte(optable_ref + opcode)])();
     clockticks6502 += pgm_read_byte(ticktable + opcode);
     if (penaltyop && penaltyaddr) clockticks6502++;

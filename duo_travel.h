@@ -39,6 +39,7 @@ bool escapeKeyIsPressed();
 int8_t getKey();
 void readStorage(void *destination, int32_t address, int32_t amount);
 void writeStorage(int32_t address, const void *source, int32_t amount);
+void writeStorageEeprom(int32_t address, const void *source, int32_t amount);
 int8_t readStorageInt8(int32_t address);
 void clearDisplay();
 void clearDisplayRegion(int8_t posX, int8_t posY, int8_t width);

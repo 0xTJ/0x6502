@@ -1,5 +1,6 @@
 #include "duo_travel.h"
 #include <util/delay.h>
+#include <avr/pgmspace.h>
 
 #define SCK_PIN_OUTPUT   DDRB |= (1 << DDB5)
 #define MISO_PIN_INPUT   DDRB &= ~(1 << DDB4)
@@ -294,6 +295,41 @@ void writeStorage(int32_t address, const void *source, int32_t amount) {
                 break;
             }
             sendSpiInt8(*(int8_t *)(source + index));
+            storageAddress += 1;
+            index += 1;
+            if (storageAddress % 64 == 0) {
+                break;
+            }
+        }
+        EEPROM_CS_PIN_HIGH;
+        _delay_ms(8);
+    }
+    storageAddress = -100;
+}
+
+void writeStorageEeprom(int32_t address, const void *source, int32_t amount) {
+    if (amount <= 0) {
+        return;
+    }
+    storageAddress = address;
+    int8_t tempShouldWrite = true;
+    int32_t index = 0;
+    while (tempShouldWrite) {
+        EEPROM_CS_PIN_HIGH;
+        _delay_us(5);
+        EEPROM_CS_PIN_LOW;
+        sendSpiInt8(0x06);
+        EEPROM_CS_PIN_HIGH;
+        _delay_us(5);
+        EEPROM_CS_PIN_LOW;
+        sendSpiInt8(0x02);
+        sendAddressToStorage(storageAddress);
+        while (true) {
+            if (index >= amount) {
+                tempShouldWrite = false;
+                break;
+            }
+            sendSpiInt8(pgm_read_byte(source + index));
             storageAddress += 1;
             index += 1;
             if (storageAddress % 64 == 0) {
