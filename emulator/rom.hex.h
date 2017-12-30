@@ -6,10 +6,12 @@ const uint8_t data0[] PROGMEM = { 0xF5 };
 struct RomHex {
     const uint8_t byte_count;
     const uint16_t address;
+    const uint8_t record_type;
     const uint8_t *data;
 } const rom_hex[] PROGMEM = {
     {
         .byte_count = 1,
+        .record_type = 0x00,
         .address = 0xFF50,
         .data = data0
     }

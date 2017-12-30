@@ -4,7 +4,7 @@
 #include <util/delay.h>
 #include "duo_travel.h"
 #include "machine.h"
-#include "6502_functional_test.hex.h"
+#include "../asm/myos.hex.h"
 
 void programmer() {
     uint8_t buf[17];
@@ -33,6 +33,7 @@ void programmer() {
         }
     }
     
+    clearDisplay();
     sprintf(buf, "WROTE ROM");
     for (int i = 0; i < 16 && buf[i]; i++)
         displayCharacter(i, 0, buf[i]);

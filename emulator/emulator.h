@@ -31,11 +31,6 @@
 #define KEY_RUN 12
 #define KEY_DEL 13
 
-#define DYN_CACHE_SIZE 1
-#if DYN_CACHE_SIZE < 1
-#error RAM cache is required!
-#endif
-
 void run();
 
 #endif  // NOT INCLUDE_DUO_EMULATOR_H

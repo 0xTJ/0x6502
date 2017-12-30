@@ -1,0 +1,42 @@
+#ifndef INCLUDE_MYOS_HEX_H
+#define INCLUDE_MYOS_HEX_H
+
+const uint8_t data0[] PROGMEM = { 0xa9, 0x1a, 0x85, 0x10, 0xa9, 0xf0, 0x85, 0x11, 0x20, 0x0e, 0xf0, 0x4c, 0x0b, 0xf0, 0xa0, 0x00, 0xb1, 0x10, 0x99, 0x00, 0x02, 0xc8, 0x4c, 0x10, 0xf0, 0x60, 0x48, 0x45, 0x4c, 0x4c, 0x4f, 0x20 };
+const uint8_t data1[] PROGMEM = { 0x57, 0x4f, 0x52, 0x4c, 0x44, 0x00, 0x20, 0x26, 0xf0 };
+const uint8_t data2[] PROGMEM = { 0x00, 0xf0, 0x00, 0xf0, 0x26, 0xf0 };
+const uint8_t data3[] PROGMEM = { };
+
+
+struct RomHex {
+    const uint8_t byte_count;
+    const uint16_t address;
+    const uint8_t record_type;
+    const uint8_t *data;
+} const rom_hex[] PROGMEM = {
+    {
+        .byte_count = 0x20,
+        .address = 0xf000,
+        .record_type = 0x00,
+        .data = data0
+    },
+    {
+        .byte_count = 0x09,
+        .address = 0xf020,
+        .record_type = 0x00,
+        .data = data1
+    },
+    {
+        .byte_count = 0x06,
+        .address = 0xfffa,
+        .record_type = 0x00,
+        .data = data2
+    },
+    {
+        .byte_count = 0x00,
+        .address = 0x0000,
+        .record_type = 0x01,
+        .data = data3
+    }
+};
+
+#endif  // NOT INCLUDE_MYOS_HEX_H

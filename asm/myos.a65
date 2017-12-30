@@ -1,0 +1,35 @@
+argl    =$10
+argh    =$11
+screen  =$0200
+
+    org $f000
+init:
+    lda #(string&0xFF)
+    sta argl
+    lda #(string/0x100)
+    sta argh
+    jsr display
+    
+infloop:
+    jmp infloop
+
+display:
+    ldy #0
+disploop:
+    lda (argl),y
+    sta screen,y
+    iny
+    jmp disploop
+    rts
+
+string:
+    db "HELLO WORLD",0
+
+irq:
+    jsr irq
+
+    org $fffa
+nmivector  dw init    ; nmi vector
+resvector  dw init    ; reset vector
+irqvector  dw irq     ; irq vector
+    end

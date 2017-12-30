@@ -147,7 +147,7 @@ void editor() {
             
             if (do_flash)
                 for (uint8_t i = 0; i < 40; i++) {
-                    _delay_ms(40);
+                    _delay_ms(20);
                     if (getPressedKeys() != comp) {
                         do_flash = false;
                         break;

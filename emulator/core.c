@@ -804,7 +804,7 @@ static void (*optable[65])() = {
     cli, clv, cmp, cpx,
     cpy, dcp, dec, dex,
     dey, eor, inc, inx,
-    iny, isb, isb, jmp,
+    iny, isb, jmp,
     jsr, lax, lda, ldx,
     ldy, lsr, nop, ora,
     pha, php, pla, plp,
@@ -845,61 +845,60 @@ static void (*optable[65])() = {
 #define OP_INX 26
 #define OP_INY 27
 #define OP_ISB 28
-// #define OP_ISB 29
-#define OP_JMP 30
-#define OP_JSR 31
-#define OP_LAX 32
-#define OP_LDA 33
-#define OP_LDX 34
-#define OP_LDY 35
-#define OP_LSR 36
-#define OP_NOP 37
-#define OP_ORA 38
-#define OP_PHA 39
-#define OP_PHP 40
-#define OP_PLA 41
-#define OP_PLP 42
-#define OP_RLA 43
-#define OP_ROL 44
-#define OP_ROR 45
-#define OP_RRA 46
-#define OP_RTI 47
-#define OP_RTS 48
-#define OP_SAX 49
-#define OP_SBC 50
-#define OP_SEC 51
-#define OP_SED 52
-#define OP_SEI 53
-#define OP_SLO 54
-#define OP_SRE 55
-#define OP_STA 56
-#define OP_STX 57
-#define OP_STY 58
-#define OP_TAX 59
-#define OP_TAY 60
-#define OP_TSX 61
-#define OP_TXA 62
-#define OP_TXS 63
-#define OP_TYA 64
+#define OP_JMP 29
+#define OP_JSR 30
+#define OP_LAX 31
+#define OP_LDA 32
+#define OP_LDX 33
+#define OP_LDY 34
+#define OP_LSR 35
+#define OP_NOP 36
+#define OP_ORA 37
+#define OP_PHA 38
+#define OP_PHP 39
+#define OP_PLA 40
+#define OP_PLP 41
+#define OP_RLA 42
+#define OP_ROL 43
+#define OP_ROR 44
+#define OP_RRA 45
+#define OP_RTI 46
+#define OP_RTS 47
+#define OP_SAX 48
+#define OP_SBC 49
+#define OP_SEC 50
+#define OP_SED 51
+#define OP_SEI 52
+#define OP_SLO 53
+#define OP_SRE 54
+#define OP_STA 55
+#define OP_STX 56
+#define OP_STY 57
+#define OP_TAX 58
+#define OP_TAY 59
+#define OP_TSX 60
+#define OP_TXA 61
+#define OP_TXS 62
+#define OP_TYA 63
 
 static const uint8_t optable_ref[256] PROGMEM = {
-/*        |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |      */
-/* 0 */      OP_BRK,  OP_ORA,  OP_NOP,  OP_SLO,  OP_NOP,  OP_ORA,  OP_ASL,  OP_SLO,  OP_PHP,  OP_ORA,  OP_ASL,  OP_NOP,  OP_NOP,  OP_ORA,  OP_ASL,  OP_SLO, /* 0 */
-/* 1 */      OP_BPL,  OP_ORA,  OP_NOP,  OP_SLO,  OP_NOP,  OP_ORA,  OP_ASL,  OP_SLO,  OP_CLC,  OP_ORA,  OP_NOP,  OP_SLO,  OP_NOP,  OP_ORA,  OP_ASL,  OP_SLO, /* 1 */
-/* 2 */      OP_JSR,  OP_AND,  OP_NOP,  OP_RLA,  OP_BIT,  OP_AND,  OP_ROL,  OP_RLA,  OP_PLP,  OP_AND,  OP_ROL,  OP_NOP,  OP_BIT,  OP_AND,  OP_ROL,  OP_RLA, /* 2 */
-/* 3 */      OP_BMI,  OP_AND,  OP_NOP,  OP_RLA,  OP_NOP,  OP_AND,  OP_ROL,  OP_RLA,  OP_SEC,  OP_AND,  OP_NOP,  OP_RLA,  OP_NOP,  OP_AND,  OP_ROL,  OP_RLA, /* 3 */
-/* 4 */      OP_RTI,  OP_EOR,  OP_NOP,  OP_SRE,  OP_NOP,  OP_EOR,  OP_LSR,  OP_SRE,  OP_PHA,  OP_EOR,  OP_LSR,  OP_NOP,  OP_JMP,  OP_EOR,  OP_LSR,  OP_SRE, /* 4 */
-/* 5 */      OP_BVC,  OP_EOR,  OP_NOP,  OP_SRE,  OP_NOP,  OP_EOR,  OP_LSR,  OP_SRE,  OP_CLI,  OP_EOR,  OP_NOP,  OP_SRE,  OP_NOP,  OP_EOR,  OP_LSR,  OP_SRE, /* 5 */
-/* 6 */      OP_RTS,  OP_ADC,  OP_NOP,  OP_RRA,  OP_NOP,  OP_ADC,  OP_ROR,  OP_RRA,  OP_PLA,  OP_ADC,  OP_ROR,  OP_NOP,  OP_JMP,  OP_ADC,  OP_ROR,  OP_RRA, /* 6 */
-/* 7 */      OP_BVS,  OP_ADC,  OP_NOP,  OP_RRA,  OP_NOP,  OP_ADC,  OP_ROR,  OP_RRA,  OP_SEI,  OP_ADC,  OP_NOP,  OP_RRA,  OP_NOP,  OP_ADC,  OP_ROR,  OP_RRA, /* 7 */
-/* 8 */      OP_NOP,  OP_STA,  OP_NOP,  OP_SAX,  OP_STY,  OP_STA,  OP_STX,  OP_SAX,  OP_DEY,  OP_NOP,  OP_TXA,  OP_NOP,  OP_STY,  OP_STA,  OP_STX,  OP_SAX, /* 8 */
-/* 9 */      OP_BCC,  OP_STA,  OP_NOP,  OP_NOP,  OP_STY,  OP_STA,  OP_STX,  OP_SAX,  OP_TYA,  OP_STA,  OP_TXS,  OP_NOP,  OP_NOP,  OP_STA,  OP_NOP,  OP_NOP, /* 9 */
-/* A */      OP_LDY,  OP_LDA,  OP_LDX,  OP_LAX,  OP_LDY,  OP_LDA,  OP_LDX,  OP_LAX,  OP_TAY,  OP_LDA,  OP_TAX,  OP_NOP,  OP_LDY,  OP_LDA,  OP_LDX,  OP_LAX, /* A */
-/* B */      OP_BCS,  OP_LDA,  OP_NOP,  OP_LAX,  OP_LDY,  OP_LDA,  OP_LDX,  OP_LAX,  OP_CLV,  OP_LDA,  OP_TSX,  OP_LAX,  OP_LDY,  OP_LDA,  OP_LDX,  OP_LAX, /* B */
-/* C */      OP_CPY,  OP_CMP,  OP_NOP,  OP_DCP,  OP_CPY,  OP_CMP,  OP_DEC,  OP_DCP,  OP_INY,  OP_CMP,  OP_DEX,  OP_NOP,  OP_CPY,  OP_CMP,  OP_DEC,  OP_DCP, /* C */
-/* D */      OP_BNE,  OP_CMP,  OP_NOP,  OP_DCP,  OP_NOP,  OP_CMP,  OP_DEC,  OP_DCP,  OP_CLD,  OP_CMP,  OP_NOP,  OP_DCP,  OP_NOP,  OP_CMP,  OP_DEC,  OP_DCP, /* D */
-/* E */      OP_CPX,  OP_SBC,  OP_NOP,  OP_ISB,  OP_CPX,  OP_SBC,  OP_INC,  OP_ISB,  OP_INX,  OP_SBC,  OP_NOP,  OP_SBC,  OP_CPX,  OP_SBC,  OP_INC,  OP_ISB, /* E */
-/* F */      OP_BEQ,  OP_SBC,  OP_NOP,  OP_ISB,  OP_NOP,  OP_SBC,  OP_INC,  OP_ISB,  OP_SED,  OP_SBC,  OP_NOP,  OP_ISB,  OP_NOP,  OP_SBC,  OP_INC,  OP_ISB  /* F */
+/*        |   0   |   1   |   2   |   3   |   4   |   5   |   6   |   7   |   8   |   9   |   A   |   B   |   C   |   D   |   E   |   F   |     */
+/* 0 */    OP_BRK, OP_ORA, OP_NOP, OP_SLO, OP_NOP, OP_ORA, OP_ASL, OP_SLO, OP_PHP, OP_ORA, OP_ASL, OP_NOP, OP_NOP, OP_ORA, OP_ASL, OP_SLO, /* 0 */
+/* 1 */    OP_BPL, OP_ORA, OP_NOP, OP_SLO, OP_NOP, OP_ORA, OP_ASL, OP_SLO, OP_CLC, OP_ORA, OP_NOP, OP_SLO, OP_NOP, OP_ORA, OP_ASL, OP_SLO, /* 1 */
+/* 2 */    OP_JSR, OP_AND, OP_NOP, OP_RLA, OP_BIT, OP_AND, OP_ROL, OP_RLA, OP_PLP, OP_AND, OP_ROL, OP_NOP, OP_BIT, OP_AND, OP_ROL, OP_RLA, /* 2 */
+/* 3 */    OP_BMI, OP_AND, OP_NOP, OP_RLA, OP_NOP, OP_AND, OP_ROL, OP_RLA, OP_SEC, OP_AND, OP_NOP, OP_RLA, OP_NOP, OP_AND, OP_ROL, OP_RLA, /* 3 */
+/* 4 */    OP_RTI, OP_EOR, OP_NOP, OP_SRE, OP_NOP, OP_EOR, OP_LSR, OP_SRE, OP_PHA, OP_EOR, OP_LSR, OP_NOP, OP_JMP, OP_EOR, OP_LSR, OP_SRE, /* 4 */
+/* 5 */    OP_BVC, OP_EOR, OP_NOP, OP_SRE, OP_NOP, OP_EOR, OP_LSR, OP_SRE, OP_CLI, OP_EOR, OP_NOP, OP_SRE, OP_NOP, OP_EOR, OP_LSR, OP_SRE, /* 5 */
+/* 6 */    OP_RTS, OP_ADC, OP_NOP, OP_RRA, OP_NOP, OP_ADC, OP_ROR, OP_RRA, OP_PLA, OP_ADC, OP_ROR, OP_NOP, OP_JMP, OP_ADC, OP_ROR, OP_RRA, /* 6 */
+/* 7 */    OP_BVS, OP_ADC, OP_NOP, OP_RRA, OP_NOP, OP_ADC, OP_ROR, OP_RRA, OP_SEI, OP_ADC, OP_NOP, OP_RRA, OP_NOP, OP_ADC, OP_ROR, OP_RRA, /* 7 */
+/* 8 */    OP_NOP, OP_STA, OP_NOP, OP_SAX, OP_STY, OP_STA, OP_STX, OP_SAX, OP_DEY, OP_NOP, OP_TXA, OP_NOP, OP_STY, OP_STA, OP_STX, OP_SAX, /* 8 */
+/* 9 */    OP_BCC, OP_STA, OP_NOP, OP_NOP, OP_STY, OP_STA, OP_STX, OP_SAX, OP_TYA, OP_STA, OP_TXS, OP_NOP, OP_NOP, OP_STA, OP_NOP, OP_NOP, /* 9 */
+/* A */    OP_LDY, OP_LDA, OP_LDX, OP_LAX, OP_LDY, OP_LDA, OP_LDX, OP_LAX, OP_TAY, OP_LDA, OP_TAX, OP_NOP, OP_LDY, OP_LDA, OP_LDX, OP_LAX, /* A */
+/* B */    OP_BCS, OP_LDA, OP_NOP, OP_LAX, OP_LDY, OP_LDA, OP_LDX, OP_LAX, OP_CLV, OP_LDA, OP_TSX, OP_LAX, OP_LDY, OP_LDA, OP_LDX, OP_LAX, /* B */
+/* C */    OP_CPY, OP_CMP, OP_NOP, OP_DCP, OP_CPY, OP_CMP, OP_DEC, OP_DCP, OP_INY, OP_CMP, OP_DEX, OP_NOP, OP_CPY, OP_CMP, OP_DEC, OP_DCP, /* C */
+/* D */    OP_BNE, OP_CMP, OP_NOP, OP_DCP, OP_NOP, OP_CMP, OP_DEC, OP_DCP, OP_CLD, OP_CMP, OP_NOP, OP_DCP, OP_NOP, OP_CMP, OP_DEC, OP_DCP, /* D */
+/* E */    OP_CPX, OP_SBC, OP_NOP, OP_ISB, OP_CPX, OP_SBC, OP_INC, OP_ISB, OP_INX, OP_SBC, OP_NOP, OP_SBC, OP_CPX, OP_SBC, OP_INC, OP_ISB, /* E */
+/* F */    OP_BEQ, OP_SBC, OP_NOP, OP_ISB, OP_NOP, OP_SBC, OP_INC, OP_ISB, OP_SED, OP_SBC, OP_NOP, OP_ISB, OP_NOP, OP_SBC, OP_INC, OP_ISB  /* F */
 };
 
 static const uint8_t ticktable[256] PROGMEM = {

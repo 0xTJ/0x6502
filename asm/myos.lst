@@ -1,0 +1,40 @@
+AS65 Assembler for R6502 [1.42].  Copyright 1994-2007, Frank A. Kingswood                                                Page    1
+------------------------------------------------------------ myos.a65 ------------------------------------------------------------
+
+34 lines read, no errors in pass 1.
+0010 =                  argl    =$10
+0011 =                  argh    =$11
+0200 =                  screen  =$0200
+                        
+f000 =                      org $f000
+f000 :                  init:
+f000 : a91a                 lda #(string&0xFF)
+f002 : 8510                 sta argl
+f004 : a9f0                 lda #(string/0x100)
+f006 : 8511                 sta argh
+f008 : 200ef0               jsr display
+                            
+f00b :                  infloop:
+f00b : 4c0bf0               jmp infloop
+                        
+f00e :                  display:
+f00e : a000                 ldy #0
+f010 :                  disploop:
+f010 : b110                 lda (argl),y
+f012 : 990002               sta screen,y
+f015 : c8                   iny
+f016 : 4c10f0               jmp disploop
+f019 : 60                   rts
+                        
+f01a :                  string:
+f01a : 48454c4c4f2057..     db "HELLO WORLD",0
+                        
+f026 :                  irq:
+f026 : 2026f0               jsr irq
+                        
+fffa =                      org $fffa
+fffa : 00f0             nmivector  dw init    ; nmi vector
+fffc : 00f0             resvector  dw init    ; reset vector
+fffe : 26f0             irqvector  dw irq     ; irq vector
+                            end
+No errors in pass 2.

@@ -11,7 +11,7 @@
 #define SPRITE_SIZE (0x0040)
 #define KEYS_ADDR   (0x0280)
 
-enum PageType { NONE = 0, ROM, RAM, IO };
+enum PageType { NONE = 0, ROM, DRAM, SRAM, IO };
 
 struct PageDef {
     uint8_t page;
