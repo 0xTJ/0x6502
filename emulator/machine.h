@@ -11,6 +11,8 @@
 #define SPRITE_SIZE (0x0040)
 #define KEYS_ADDR   (0x0280)
 
+#define IRQ_TUNING  (0x200)
+
 enum PageType { NONE = 0, ROM, DRAM, SRAM, IO };
 
 struct PageDef {
@@ -28,6 +30,8 @@ extern const struct PageDef page_defs[];
 
 void loadPageDefs();
 void resetMachine();
+
+void externProc();
 
 uint8_t read6502(uint16_t address);
 void write6502(uint16_t address, uint8_t value);

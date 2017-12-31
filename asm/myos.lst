@@ -1,40 +1,140 @@
 AS65 Assembler for R6502 [1.42].  Copyright 1994-2007, Frank A. Kingswood                                                Page    1
 ------------------------------------------------------------ myos.a65 ------------------------------------------------------------
 
-34 lines read, no errors in pass 1.
-0010 =                  argl    =$10
-0011 =                  argh    =$11
-0200 =                  screen  =$0200
+134 lines read, no errors in pass 1.
+0010 =                  arg_16_l    equ     $10
+0011 =                  arg_16_h    equ     arg_16_l + 1
+0200 =                  screenbase  equ     $0200
+0220 =                  spritebase  equ     $0220
+0080 =                  kcurtask    equ     $80
+0081 =                  knxttask    equ     $81
+0082 =                  kstkpnts_s  equ     $82
+0085 =                  kstkpnts_e  equ     kstkpnts_s + 3
+0086 =                  kstkpgs_s   equ     $86
+0089 =                  kstkpgs_e   equ     kstkpgs_s + 3
+0090 =                  kstkpg_16_l equ     $90
+0091 =                  kstkpg_16_h equ     kstkpg_16_l + 1
+00a0 =                  ktmp0       equ     $a0
+00a1 =                  ktmp1       equ     $a1
+00a2 =                  ktmp2       equ     $a2
+00a3 =                  ktmp3       equ     $a3
                         
-f000 =                      org $f000
-f000 :                  init:
-f000 : a91a                 lda #(string&0xFF)
-f002 : 8510                 sta argl
-f004 : a9f0                 lda #(string/0x100)
-f006 : 8511                 sta argh
-f008 : 200ef0               jsr display
-                            
-f00b :                  infloop:
-f00b : 4c0bf0               jmp infloop
                         
-f00e :                  display:
-f00e : a000                 ldy #0
-f010 :                  disploop:
-f010 : b110                 lda (argl),y
-f012 : 990002               sta screen,y
-f015 : c8                   iny
-f016 : 4c10f0               jmp disploop
-f019 : 60                   rts
+                                    data
+0082 =                              org     kstkpnts_s
+0082 : f7f7f7f7                     db      $F7, $F7, $F7, $F7
+0086 =                              org     kstkpgs_s
+0086 : 04050607                     db      $04, $05, $06, $07
                         
-f01a :                  string:
-f01a : 48454c4c4f2057..     db "HELLO WORLD",0
+04f8 =                              org     $04F8
+04f8 : 000000000af0                 db      $00, $00, $00, $00, lo start0, hi start0
+05f8 =                              org     $05F8
+05f8 : 0000000015f0                 db      $00, $00, $00, $00, lo start1, hi start1
+06f8 =                              org     $06F8
+06f8 : 0000000027f0                 db      $00, $00, $00, $00, lo start2, hi start2
+07f8 =                              org     $07F8
+07f8 : 0000000027f0                 db      $00, $00, $00, $00, lo start3, hi start3
+                                    
+                                    code
+f000 =                              org     $f000
+f000 : a900             init        lda     #$00
+f002 : 8581                         sta     knxttask
+f004 : 4c62f0                       jmp     lodstk
+                                    
+f007 : 4c07f0           infloop     jmp     infloop             ; CHECK THAT ALL FIELDS ARE PRESERVED
                         
-f026 :                  irq:
-f026 : 2026f0               jsr irq
+f00a : a95a             start0      lda     #90
+f00c : a25b                         ldx     #91
+f00e : a05c                         ldy     #92
+f010 : 00                           brk
+f011 : 00                           db      0
+f012 : 4c07f0                       jmp     infloop
                         
-fffa =                      org $fffa
-fffa : 00f0             nmivector  dw init    ; nmi vector
-fffc : 00f0             resvector  dw init    ; reset vector
-fffe : 26f0             irqvector  dw irq     ; irq vector
-                            end
+f015 : a956             start1      lda     #$56
+f017 : 8521                         sta     $21
+f019 : 48                           pha
+f01a : a2a1                         ldx     #$a1
+f01c : a0a2                         ldy     #$a2
+f01e : a900                         lda     #$00
+f020 : 8581                         sta     knxttask
+f022 : 00                           brk
+f023 : 00                           db      0
+f024 : 4c07f0                       jmp     infloop
+                                    
+                        
+f027 :                  start2      
+                        
+f027 :                  start3      
+                        
+f027 : a000             disp        ldy     #0
+f029 : b110             disp_loop   lda     (arg_16_l),y
+f02b : c900                         cmp     #0
+f02d : f007                         beq     disp_ret
+f02f : 990002                       sta     screenbase,y
+f032 : c8                           iny
+f033 : 4c29f0                       jmp     disp_loop
+f036 : 60               disp_ret    rts
+                        
+f037 : 48               irq         pha
+f038 : 8a                           txa
+f039 : 48                           pha
+f03a : 98                           tya
+f03b : 48                           pha
+f03c : a480             savstk      ldy     kcurtask
+f03e : a900                         lda     #0
+f040 : 8590                         sta     kstkpg_16_l
+f042 : b98600                       lda     kstkpgs_s,y
+f045 : 8591                         sta     kstkpg_16_h
+f047 : ba                           tsx
+f048 : 9682                         stx     kstkpnts_s,y
+f04a : 86a2                         stx     ktmp2
+f04c : a000                         ldy     #lo $0100
+f04e : 84a0                         sty     ktmp0
+f050 : a001                         ldy     #hi $0100
+f052 : 84a1                         sty     ktmp1
+f054 : a4a2                         ldy     ktmp2
+f056 : b1a0             savstk_loop lda     (ktmp0),y
+f058 : 9190                         sta     (kstkpg_16_l),y
+f05a : c0ff                         cpy     #$FF
+f05c : f004                         beq     lodstk
+f05e : c8                           iny
+f05f : 4c56f0                       jmp     savstk_loop
+f062 : a481             lodstk      ldy     knxttask
+f064 : a900                         lda     #0
+f066 : 8590                         sta     kstkpg_16_l
+f068 : b98600                       lda     kstkpgs_s,y
+f06b : 8591                         sta     kstkpg_16_h
+f06d : b682                         ldx     kstkpnts_s,y
+f06f : 9a                           txs
+f070 : 86a2                         stx     ktmp2
+f072 : a000                         ldy     #lo $0100
+f074 : 84a0                         sty     ktmp0
+f076 : a001                         ldy     #hi $0100
+f078 : 84a1                         sty     ktmp1
+f07a : a4a2                         ldy     ktmp2
+f07c : b190             lodstk_loop lda     (kstkpg_16_l),y
+f07e : 91a0                         sta     (ktmp0),y
+f080 : c0ff                         cpy     #$FF
+f082 : f004                         beq     swtch_ret
+f084 : c8                           iny
+f085 : 4c7cf0                       jmp     lodstk_loop
+f088 : a581             swtch_ret   lda     knxttask
+f08a : 8580                         sta     kcurtask
+f08c : 68                           pla
+f08d : a8                           tay
+f08e : 68                           pla
+f08f : aa                           tax
+f090 : 68                           pla
+f091 : 40                           rti
+                        
+                                    data
+0300 =                              org     $300
+0300 : 48454c4c4f2057.. hwstr       fcc      "HELLO WORLD!"
+                        
+                                    code
+fffa =                              org     $fffa
+fffa : 37f0             nmivector   dw      irq    ; nmi vector
+fffc : 00f0             resvector   dw      init    ; reset vector
+fffe : 37f0             irqvector   dw      irq     ; irq vector
+                                    end
 No errors in pass 2.

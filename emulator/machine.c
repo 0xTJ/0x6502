@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <util/delay.h>
 #include "duo_travel.h"
+#include "core.h"
 
 bool is_running = false;
 const struct PageDef *defd_pages[0x100];
@@ -29,6 +30,12 @@ void resetMachine() {
             page_defs[i].ioInitFunc();
         }
     }
+    
+    hookexternal(externProc);
+}
+
+void externProc() {
+    
 }
 
 uint8_t read6502(uint16_t address) {
