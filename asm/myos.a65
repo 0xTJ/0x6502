@@ -1,7 +1,5 @@
 arg_16_l    equ     $10
 arg_16_h    equ     arg_16_l + 1
-screenbase  equ     $0200
-spritebase  equ     $0220
 kcurtask    equ     $80
 knxttask    equ     $81
 kstkpnts_s  equ     $82
@@ -15,53 +13,49 @@ ktmp1       equ     $a1
 ktmp2       equ     $a2
 ktmp3       equ     $a3
 
+screenbase  equ     $0200
+spritebase  equ     $0220
 
             data
             org     kstkpnts_s
-            db      $F7, $F7, $F7, $F7
+            db      $f7, $f7, $f7, $f7
             org     kstkpgs_s
             db      $04, $05, $06, $07
 
-            org     $04F8
-            db      $00, $00, $00, $00, lo start0, hi start0
-            org     $05F8
-            db      $00, $00, $00, $00, lo start1, hi start1
-            org     $06F8
-            db      $00, $00, $00, $00, lo start2, hi start2
-            org     $07F8
-            db      $00, $00, $00, $00, lo start3, hi start3
-            
+            org     $04f8
+            db      $00, $00, $00, $20, lo start0, hi start0
+            org     $05f8
+            db      $00, $00, $00, $20, lo start1, hi start1
+            org     $06f8
+            db      $00, $00, $00, $20, lo start2, hi start2
+            org     $07f8
+            db      $00, $00, $00, $20, lo start3, hi start3
+
+;*------------------------------------------------------------------*
+;*                        Kernel Initialize                         *
+;*------------------------------------------------------------------*
             code
             org     $f000
-init        lda     #$00
+init        sti
+            lda     #$00
             sta     knxttask
             jmp     lodstk
             
-infloop     jmp     infloop             ; CHECK THAT ALL FIELDS ARE PRESERVED
+infloop     jmp     infloop
 
-start0      lda     #90
-            ldx     #91
-            ldy     #92
-            brk
-            db      0
+start0      cli
             jmp     infloop
 
-start1      lda     #$56
-            sta     $21
-            pha
-            ldx     #$a1
-            ldy     #$a2
-            lda     #$00
-            sta     knxttask
-            brk
-            db      0
-            jmp     infloop
+start1      jmp     infloop
             
 
-start2      
+start2      jmp     infloop
 
-start3      
+start3      jmp     infloop
 
+;*------------------------------------------------------------------*
+;*                         Display Routines                         *
+;*------------------------------------------------------------------*
 disp        ldy     #0
 disp_loop   lda     (arg_16_l),y
             cmp     #0
@@ -71,12 +65,18 @@ disp_loop   lda     (arg_16_l),y
             jmp     disp_loop
 disp_ret    rts
 
-irq         pha
+;*------------------------------------------------------------------*
+;*                    Interrupt Service Routine                     *
+;*------------------------------------------------------------------*
+irq
+            pha                 ; Save registers to current stack
             txa
             pha
             tya
             pha
-savstk      ldy     kcurtask
+            
+savstk
+            ldy     kcurtask
             lda     #0
             sta     kstkpg_16_l
             lda     kstkpgs_s,y
@@ -89,13 +89,15 @@ savstk      ldy     kcurtask
             ldy     #hi $0100
             sty     ktmp1
             ldy     ktmp2
-savstk_loop lda     (ktmp0),y
+savstk_loop
+            lda     (ktmp0),y
             sta     (kstkpg_16_l),y
-            cpy     #$FF
+            cpy     #$ff
             beq     lodstk
             iny
             jmp     savstk_loop
-lodstk      ldy     knxttask
+lodstk
+            ldy     knxttask
             lda     #0
             sta     kstkpg_16_l
             lda     kstkpgs_s,y
@@ -108,13 +110,15 @@ lodstk      ldy     knxttask
             ldy     #hi $0100
             sty     ktmp1
             ldy     ktmp2
-lodstk_loop lda     (kstkpg_16_l),y
+lodstk_loop
+            lda     (kstkpg_16_l),y
             sta     (ktmp0),y
-            cpy     #$FF
-            beq     swtch_ret
+            cpy     #$ff
+            beq     irq_ret
             iny
             jmp     lodstk_loop
-swtch_ret   lda     knxttask
+irq_ret
+            lda     knxttask
             sta     kcurtask
             pla
             tay
@@ -123,13 +127,23 @@ swtch_ret   lda     knxttask
             pla
             rti
 
-            data
-            org     $300
-hwstr       fcc      "HELLO WORLD!"
+;*------------------------------------------------------------------*
+;*                        Build Information                         *
+;*------------------------------------------------------------------*
+            code
+build
+            fcb     0,1,0       ; VERSION 0.1.0
+            fcc     "VERSION"
+            fcb     0
+            fcc     "0xOS"
+            fcb     0
 
+;*------------------------------------------------------------------*
+;*                             Vectors                              *
+;*------------------------------------------------------------------*
             code
             org     $fffa
-nmivector   dw      irq    ; nmi vector
+nmivector   dw      nmi    ; nmi vector
 resvector   dw      init    ; reset vector
 irqvector   dw      irq     ; irq vector
             end

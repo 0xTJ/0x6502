@@ -1,10 +1,10 @@
 BINARIES = myos.bin myos.hex myos.hex.h
-COMPILE = ../tools/as65 -l -m -w -h0
+COMPILE = ../tools/as65 -l -m -w -h0 -u -c
 
 .SUFFIXES: .a65 .bin .hex
 
 # symbolic targets:
-all:    $(BINARIES)
+all:    myos.hex.h
 
 .a65.hex:
 	$(COMPILE) -s2 $<

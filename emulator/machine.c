@@ -34,8 +34,13 @@ void resetMachine() {
     hookexternal(externProc);
 }
 
+uint32_t next_clockticks6502 = IRQ_TUNING;
+
 void externProc() {
-    
+    if (clockticks6502 >= next_clockticks6502) {
+        next_clockticks6502 += IRQ_TUNING;
+        irq6502();
+    }
 }
 
 uint8_t read6502(uint16_t address) {

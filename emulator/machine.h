@@ -11,7 +11,7 @@
 #define SPRITE_SIZE (0x0040)
 #define KEYS_ADDR   (0x0280)
 
-#define IRQ_TUNING  (0x200)
+#define IRQ_TUNING  (0x400)
 
 enum PageType { NONE = 0, ROM, DRAM, SRAM, IO };
 
