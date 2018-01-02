@@ -16,4 +16,4 @@ all:    myos.hex.h
 	py create_hex.py $<
     
 clean:
-	rm -f $(BINARIES) *.lst
+	rm -f $(BINARIES) *.lst *.dbg

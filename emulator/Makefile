@@ -63,7 +63,7 @@ load: all
 	bootloadHID main.hex
 
 clean:
-	rm -f main.hex main.elf $(OBJECTS)
+	rm -f main.hex main.elf *.su $(OBJECTS)
 
 # file targets:
 main.elf: $(OBJECTS)
