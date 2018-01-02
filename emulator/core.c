@@ -4,8 +4,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <avr/pgmspace.h>
-#include "machine.h"
 
 //externally supplied functions
 extern uint8_t read6502(uint16_t address);
@@ -110,21 +108,16 @@ void reset6502() {
     x = 0;
     y = 0;
     sp = 0xFD;
-    // status |= FLAG_CONSTANT;
-    status = FLAG_CONSTANT;
+    status |= FLAG_CONSTANT;
 }
 
 
-static const uint8_t addrtable_ref[256];
-static void (*addrtable[13])();
-static const uint8_t optable_ref[256];
-static void (*optable[65])();
+static void (*addrtable[256])();
+static void (*optable[256])();
 uint8_t penaltyop, penaltyaddr;
 
 //addressing mode functions, calculates effective addresses
 static void imp() { //implied
-    volatile int test = 0;
-    test = 1;
 }
 
 static void acc() { //accumulator
@@ -747,162 +740,48 @@ static void tya() {
     #define rra nop
 #endif
 
-static void (*addrtable[13])() = {
-    imp,
-    acc,
-    imm,
-    zp,
-    zpx,
-    zpy,
-    rel,
-    abso,
-    absx,
-    absy,
-    ind,
-    indx,
-    indy
-};
 
-#define ADDR_IMP 0
-#define ADDR_ACC 1
-#define ADDR_IMM 2
-#define ADDR_ZP 3
-#define ADDR_ZPX 4
-#define ADDR_ZPY 5
-#define ADDR_REL 6
-#define ADDR_ABSO 7
-#define ADDR_ABSX 8
-#define ADDR_ABSY 9
-#define ADDR_IND 10
-#define ADDR_INDX 11
-#define ADDR_INDY 12
-
-static const uint8_t addrtable_ref[256] PROGMEM = {
+static void (*addrtable[256])() = {
 /*        |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |     */
-/* 0 */     ADDR_IMP, ADDR_INDX,  ADDR_IMP, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_ACC,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* 0 */
-/* 1 */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, /* 1 */
-/* 2 */    ADDR_ABSO, ADDR_INDX,  ADDR_IMP, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_ACC,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* 2 */
-/* 3 */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, /* 3 */
-/* 4 */     ADDR_IMP, ADDR_INDX,  ADDR_IMP, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_ACC,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* 4 */
-/* 5 */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, /* 5 */
-/* 6 */     ADDR_IMP, ADDR_INDX,  ADDR_IMP, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_ACC,  ADDR_IMM,  ADDR_IND, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* 6 */
-/* 7 */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, /* 7 */
-/* 8 */     ADDR_IMM, ADDR_INDX,  ADDR_IMM, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_IMP,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* 8 */
-/* 9 */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPY,  ADDR_ZPY,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSY, ADDR_ABSY, /* 9 */
-/* A */     ADDR_IMM, ADDR_INDX,  ADDR_IMM, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_IMP,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* A */
-/* B */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPY,  ADDR_ZPY,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSY, ADDR_ABSY, /* B */
-/* C */     ADDR_IMM, ADDR_INDX,  ADDR_IMM, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_IMP,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* C */
-/* D */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, /* D */
-/* E */     ADDR_IMM, ADDR_INDX,  ADDR_IMM, ADDR_INDX,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,   ADDR_ZP,  ADDR_IMP,  ADDR_IMM,  ADDR_IMP,  ADDR_IMM, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, ADDR_ABSO, /* E */
-/* F */     ADDR_REL, ADDR_INDY,  ADDR_IMP, ADDR_INDY,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_ZPX,  ADDR_IMP, ADDR_ABSY,  ADDR_IMP, ADDR_ABSY, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX, ADDR_ABSX  /* F */
+/* 0 */     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 0 */
+/* 1 */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 1 */
+/* 2 */    abso, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 2 */
+/* 3 */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 3 */
+/* 4 */     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm, abso, abso, abso, abso, /* 4 */
+/* 5 */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 5 */
+/* 6 */     imp, indx,  imp, indx,   zp,   zp,   zp,   zp,  imp,  imm,  acc,  imm,  ind, abso, abso, abso, /* 6 */
+/* 7 */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* 7 */
+/* 8 */     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* 8 */
+/* 9 */     rel, indy,  imp, indy,  zpx,  zpx,  zpy,  zpy,  imp, absy,  imp, absy, absx, absx, absy, absy, /* 9 */
+/* A */     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* A */
+/* B */     rel, indy,  imp, indy,  zpx,  zpx,  zpy,  zpy,  imp, absy,  imp, absy, absx, absx, absy, absy, /* B */
+/* C */     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* C */
+/* D */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx, /* D */
+/* E */     imm, indx,  imm, indx,   zp,   zp,   zp,   zp,  imp,  imm,  imp,  imm, abso, abso, abso, abso, /* E */
+/* F */     rel, indy,  imp, indy,  zpx,  zpx,  zpx,  zpx,  imp, absy,  imp, absy, absx, absx, absx, absx  /* F */
 };
 
-static void (*optable[65])() = {
-    adc, and, asl,      // 1, 2, 3,
-    bcc, bcs, beq, bit, // 4, 5, 6, 7,
-    bmi, bne, bpl, brk, // 4, 5, 6, 7,
-    bvc, bvs, clc, cld, // 4, 5, 6, 7,
-    cli, clv, cmp, cpx,
-    cpy, dcp, dec, dex,
-    dey, eor, inc, inx,
-    iny, isb, jmp,
-    jsr, lax, lda, ldx,
-    ldy, lsr, nop, ora,
-    pha, php, pla, plp,
-    rla, rol, ror, rra,
-    rti, rts, sax, sbc,
-    sec, sed, sei, slo,
-    sre, sta, stx, sty,
-    tax, tay, tsx, txa,
-    txs, tya
+static void (*optable[256])() = {
+/*        |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |      */
+/* 0 */      brk,  ora,  nop,  slo,  nop,  ora,  asl,  slo,  php,  ora,  asl,  nop,  nop,  ora,  asl,  slo, /* 0 */
+/* 1 */      bpl,  ora,  nop,  slo,  nop,  ora,  asl,  slo,  clc,  ora,  nop,  slo,  nop,  ora,  asl,  slo, /* 1 */
+/* 2 */      jsr,  and,  nop,  rla,  bit,  and,  rol,  rla,  plp,  and,  rol,  nop,  bit,  and,  rol,  rla, /* 2 */
+/* 3 */      bmi,  and,  nop,  rla,  nop,  and,  rol,  rla,  sec,  and,  nop,  rla,  nop,  and,  rol,  rla, /* 3 */
+/* 4 */      rti,  eor,  nop,  sre,  nop,  eor,  lsr,  sre,  pha,  eor,  lsr,  nop,  jmp,  eor,  lsr,  sre, /* 4 */
+/* 5 */      bvc,  eor,  nop,  sre,  nop,  eor,  lsr,  sre,  cli,  eor,  nop,  sre,  nop,  eor,  lsr,  sre, /* 5 */
+/* 6 */      rts,  adc,  nop,  rra,  nop,  adc,  ror,  rra,  pla,  adc,  ror,  nop,  jmp,  adc,  ror,  rra, /* 6 */
+/* 7 */      bvs,  adc,  nop,  rra,  nop,  adc,  ror,  rra,  sei,  adc,  nop,  rra,  nop,  adc,  ror,  rra, /* 7 */
+/* 8 */      nop,  sta,  nop,  sax,  sty,  sta,  stx,  sax,  dey,  nop,  txa,  nop,  sty,  sta,  stx,  sax, /* 8 */
+/* 9 */      bcc,  sta,  nop,  nop,  sty,  sta,  stx,  sax,  tya,  sta,  txs,  nop,  nop,  sta,  nop,  nop, /* 9 */
+/* A */      ldy,  lda,  ldx,  lax,  ldy,  lda,  ldx,  lax,  tay,  lda,  tax,  nop,  ldy,  lda,  ldx,  lax, /* A */
+/* B */      bcs,  lda,  nop,  lax,  ldy,  lda,  ldx,  lax,  clv,  lda,  tsx,  lax,  ldy,  lda,  ldx,  lax, /* B */
+/* C */      cpy,  cmp,  nop,  dcp,  cpy,  cmp,  dec,  dcp,  iny,  cmp,  dex,  nop,  cpy,  cmp,  dec,  dcp, /* C */
+/* D */      bne,  cmp,  nop,  dcp,  nop,  cmp,  dec,  dcp,  cld,  cmp,  nop,  dcp,  nop,  cmp,  dec,  dcp, /* D */
+/* E */      cpx,  sbc,  nop,  isb,  cpx,  sbc,  inc,  isb,  inx,  sbc,  nop,  sbc,  cpx,  sbc,  inc,  isb, /* E */
+/* F */      beq,  sbc,  nop,  isb,  nop,  sbc,  inc,  isb,  sed,  sbc,  nop,  isb,  nop,  sbc,  inc,  isb  /* F */
 };
 
-#define OP_ADC 0
-#define OP_AND 1
-#define OP_ASL 2
-#define OP_BCC 3
-#define OP_BCS 4
-#define OP_BEQ 5
-#define OP_BIT 6
-#define OP_BMI 7
-#define OP_BNE 8
-#define OP_BPL 9
-#define OP_BRK 10
-#define OP_BVC 11
-#define OP_BVS 12
-#define OP_CLC 13
-#define OP_CLD 14
-#define OP_CLI 15
-#define OP_CLV 16
-#define OP_CMP 17
-#define OP_CPX 18
-#define OP_CPY 19
-#define OP_DCP 20
-#define OP_DEC 21
-#define OP_DEX 22
-#define OP_DEY 23
-#define OP_EOR 24
-#define OP_INC 25
-#define OP_INX 26
-#define OP_INY 27
-#define OP_ISB 28
-#define OP_JMP 29
-#define OP_JSR 30
-#define OP_LAX 31
-#define OP_LDA 32
-#define OP_LDX 33
-#define OP_LDY 34
-#define OP_LSR 35
-#define OP_NOP 36
-#define OP_ORA 37
-#define OP_PHA 38
-#define OP_PHP 39
-#define OP_PLA 40
-#define OP_PLP 41
-#define OP_RLA 42
-#define OP_ROL 43
-#define OP_ROR 44
-#define OP_RRA 45
-#define OP_RTI 46
-#define OP_RTS 47
-#define OP_SAX 48
-#define OP_SBC 49
-#define OP_SEC 50
-#define OP_SED 51
-#define OP_SEI 52
-#define OP_SLO 53
-#define OP_SRE 54
-#define OP_STA 55
-#define OP_STX 56
-#define OP_STY 57
-#define OP_TAX 58
-#define OP_TAY 59
-#define OP_TSX 60
-#define OP_TXA 61
-#define OP_TXS 62
-#define OP_TYA 63
-
-static const uint8_t optable_ref[256] PROGMEM = {
-/*        |   0   |   1   |   2   |   3   |   4   |   5   |   6   |   7   |   8   |   9   |   A   |   B   |   C   |   D   |   E   |   F   |     */
-/* 0 */    OP_BRK, OP_ORA, OP_NOP, OP_SLO, OP_NOP, OP_ORA, OP_ASL, OP_SLO, OP_PHP, OP_ORA, OP_ASL, OP_NOP, OP_NOP, OP_ORA, OP_ASL, OP_SLO, /* 0 */
-/* 1 */    OP_BPL, OP_ORA, OP_NOP, OP_SLO, OP_NOP, OP_ORA, OP_ASL, OP_SLO, OP_CLC, OP_ORA, OP_NOP, OP_SLO, OP_NOP, OP_ORA, OP_ASL, OP_SLO, /* 1 */
-/* 2 */    OP_JSR, OP_AND, OP_NOP, OP_RLA, OP_BIT, OP_AND, OP_ROL, OP_RLA, OP_PLP, OP_AND, OP_ROL, OP_NOP, OP_BIT, OP_AND, OP_ROL, OP_RLA, /* 2 */
-/* 3 */    OP_BMI, OP_AND, OP_NOP, OP_RLA, OP_NOP, OP_AND, OP_ROL, OP_RLA, OP_SEC, OP_AND, OP_NOP, OP_RLA, OP_NOP, OP_AND, OP_ROL, OP_RLA, /* 3 */
-/* 4 */    OP_RTI, OP_EOR, OP_NOP, OP_SRE, OP_NOP, OP_EOR, OP_LSR, OP_SRE, OP_PHA, OP_EOR, OP_LSR, OP_NOP, OP_JMP, OP_EOR, OP_LSR, OP_SRE, /* 4 */
-/* 5 */    OP_BVC, OP_EOR, OP_NOP, OP_SRE, OP_NOP, OP_EOR, OP_LSR, OP_SRE, OP_CLI, OP_EOR, OP_NOP, OP_SRE, OP_NOP, OP_EOR, OP_LSR, OP_SRE, /* 5 */
-/* 6 */    OP_RTS, OP_ADC, OP_NOP, OP_RRA, OP_NOP, OP_ADC, OP_ROR, OP_RRA, OP_PLA, OP_ADC, OP_ROR, OP_NOP, OP_JMP, OP_ADC, OP_ROR, OP_RRA, /* 6 */
-/* 7 */    OP_BVS, OP_ADC, OP_NOP, OP_RRA, OP_NOP, OP_ADC, OP_ROR, OP_RRA, OP_SEI, OP_ADC, OP_NOP, OP_RRA, OP_NOP, OP_ADC, OP_ROR, OP_RRA, /* 7 */
-/* 8 */    OP_NOP, OP_STA, OP_NOP, OP_SAX, OP_STY, OP_STA, OP_STX, OP_SAX, OP_DEY, OP_NOP, OP_TXA, OP_NOP, OP_STY, OP_STA, OP_STX, OP_SAX, /* 8 */
-/* 9 */    OP_BCC, OP_STA, OP_NOP, OP_NOP, OP_STY, OP_STA, OP_STX, OP_SAX, OP_TYA, OP_STA, OP_TXS, OP_NOP, OP_NOP, OP_STA, OP_NOP, OP_NOP, /* 9 */
-/* A */    OP_LDY, OP_LDA, OP_LDX, OP_LAX, OP_LDY, OP_LDA, OP_LDX, OP_LAX, OP_TAY, OP_LDA, OP_TAX, OP_NOP, OP_LDY, OP_LDA, OP_LDX, OP_LAX, /* A */
-/* B */    OP_BCS, OP_LDA, OP_NOP, OP_LAX, OP_LDY, OP_LDA, OP_LDX, OP_LAX, OP_CLV, OP_LDA, OP_TSX, OP_LAX, OP_LDY, OP_LDA, OP_LDX, OP_LAX, /* B */
-/* C */    OP_CPY, OP_CMP, OP_NOP, OP_DCP, OP_CPY, OP_CMP, OP_DEC, OP_DCP, OP_INY, OP_CMP, OP_DEX, OP_NOP, OP_CPY, OP_CMP, OP_DEC, OP_DCP, /* C */
-/* D */    OP_BNE, OP_CMP, OP_NOP, OP_DCP, OP_NOP, OP_CMP, OP_DEC, OP_DCP, OP_CLD, OP_CMP, OP_NOP, OP_DCP, OP_NOP, OP_CMP, OP_DEC, OP_DCP, /* D */
-/* E */    OP_CPX, OP_SBC, OP_NOP, OP_ISB, OP_CPX, OP_SBC, OP_INC, OP_ISB, OP_INX, OP_SBC, OP_NOP, OP_SBC, OP_CPX, OP_SBC, OP_INC, OP_ISB, /* E */
-/* F */    OP_BEQ, OP_SBC, OP_NOP, OP_ISB, OP_NOP, OP_SBC, OP_INC, OP_ISB, OP_SED, OP_SBC, OP_NOP, OP_ISB, OP_NOP, OP_SBC, OP_INC, OP_ISB  /* F */
-};
-
-static const uint8_t ticktable[256] PROGMEM = {
+static const uint32_t ticktable[256] = {
 /*        |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |  A  |  B  |  C  |  D  |  E  |  F  |     */
 /* 0 */      7,    6,    2,    8,    3,    3,    5,    5,    3,    2,    2,    2,    4,    4,    6,    6,  /* 0 */
 /* 1 */      2,    5,    2,    8,    4,    4,    6,    6,    2,    4,    2,    7,    4,    4,    7,    7,  /* 1 */
@@ -945,13 +824,13 @@ void exec6502(uint32_t tickcount) {
 
     while (clockticks6502 < clockgoal6502) {
         opcode = read6502(pc++);
-        
+
         penaltyop = 0;
         penaltyaddr = 0;
 
-        (*addrtable[pgm_read_byte(addrtable_ref + opcode)])();
-        (*optable[pgm_read_byte(optable_ref + opcode)])();
-        clockticks6502 += pgm_read_byte(ticktable + opcode);
+        (*addrtable[opcode])();
+        (*optable[opcode])();
+        clockticks6502 += ticktable[opcode];
         if (penaltyop && penaltyaddr) clockticks6502++;
 
         instructions++;
@@ -967,9 +846,9 @@ void step6502() {
     penaltyop = 0;
     penaltyaddr = 0;
 
-    (*addrtable[pgm_read_byte(addrtable_ref + opcode)])();
-    (*optable[pgm_read_byte(optable_ref + opcode)])();
-    clockticks6502 += pgm_read_byte(ticktable + opcode);
+    (*addrtable[opcode])();
+    (*optable[opcode])();
+    clockticks6502 += ticktable[opcode];
     if (penaltyop && penaltyaddr) clockticks6502++;
     clockgoal6502 = clockticks6502;
 
