@@ -36,7 +36,12 @@ spritebase  equ     $0220
 ;*------------------------------------------------------------------*
             code
             org     $f000
-init        sti
+init        lda     #lo build_name
+            sta     arg_16_l
+            lda     #hi build_name
+            sta     arg_16_h
+            jsr     disp
+            sti
             lda     #$00
             sta     knxttask
             jmp     lodstk
@@ -131,11 +136,10 @@ irq_ret
 ;*                        Build Information                         *
 ;*------------------------------------------------------------------*
             code
-build
-            fcb     0,1,0       ; VERSION 0.1.0
-            fcc     "VERSION"
+build_code  fcb     0,1,0       ; VERSION 0.1.0
+build_ver   fcc     "VERSION"
             fcb     0
-            fcc     "0xOS"
+build_name  fcc     "0xOS"
             fcb     0
 
 ;*------------------------------------------------------------------*
@@ -143,7 +147,7 @@ build
 ;*------------------------------------------------------------------*
             code
             org     $fffa
-nmivector   dw      nmi    ; nmi vector
+nmivector   dw      init    ; nmi vector
 resvector   dw      init    ; reset vector
 irqvector   dw      irq     ; irq vector
             end

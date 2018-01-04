@@ -1,6 +1,8 @@
 #ifndef INCLUDE_CORE_H
 #define INCLUDE_CORE_H
 
+#include <stdint.h>
+
 extern uint16_t pc;
 extern uint8_t sp, a, x, y, status;
 

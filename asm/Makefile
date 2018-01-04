@@ -4,7 +4,7 @@ COMPILE = ../tools/as65 -l -m -w -h0 -u -c
 .SUFFIXES: .a65 .bin .hex
 
 # symbolic targets:
-all:    myos.hex.h
+all:    myos.hex
 
 .a65.hex:
 	$(COMPILE) -s2 $<
