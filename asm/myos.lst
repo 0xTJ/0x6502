@@ -1,9 +1,10 @@
 AS65 Assembler for R6502 [1.42].  Copyright 1994-2007, Frank A. Kingswood                                                Page    1
 ------------------------------------------------------------ myos.a65 ------------------------------------------------------------
 
-262 lines read, no errors in pass 1.
+259 lines read, no errors in pass 1.
 0010 =                       arg_l       equ     $10
 0011 =                       arg_h       equ     $11
+0010 =                       arg_16      equ     $10
 0080 =                       kcurtask    equ     $80
 0081 =                       knxttask    equ     $81
 0082 =                       kstkpnts_s  equ     $82
@@ -22,7 +23,7 @@ AS65 Assembler for R6502 [1.42].  Copyright 1994-2007, Frank A. Kingswood       
 0100 =                       stackbase   equ     $0100
                              
 0400 =                       screenbase  equ     $0400
-07ff =                       screentop   equ     $07ff
+07e7 =                       screentop   equ     $07e7
                              
 0300 =                       keybrdbase  equ     $0300   ; keybrd must be contained within single page
 037f =                       keybrdtop   equ     $037F
@@ -42,18 +43,20 @@ AS65 Assembler for R6502 [1.42].  Copyright 1994-2007, Frank A. Kingswood       
 0b00 =                       task3_stk   equ     $0b00
                              
 08f8 =                                   org     task0_stk + initstkoffs
-08f8 : 000000200bf0                      fcb     $00, $00, $00, $20, lo start0, hi start0
+08f8 : 0000002032f0                      fcb     $00, $00, $00, $20, lo start0, hi start0
 09f8 =                                   org     task1_stk + initstkoffs
-09f8 : 0000002058f0                      fcb     $00, $00, $00, $20, lo start1, hi start1
+09f8 : 000000207cf0                      fcb     $00, $00, $00, $20, lo start1, hi start1
 0af8 =                                   org     task2_stk + initstkoffs
-0af8 : 000000205bf0                      fcb     $00, $00, $00, $20, lo start2, hi start2
+0af8 : 000000207ff0                      fcb     $00, $00, $00, $20, lo start2, hi start2
 0bf8 =                                   org     task3_stk + initstkoffs
-0bf8 : 000000205ef0                      fcb     $00, $00, $00, $20, lo start3, hi start3
+0bf8 : 0000002082f0                      fcb     $00, $00, $00, $20, lo start3, hi start3
                              
                                          bss
 0200 =                                   org     $0200
                                          data
 0300 =                                   org     $0300
+                                         code
+f000 =                                   org     $f000
                                          
                              ;*------------------------------------------------------------------*
                              ;*                          General Macros                          *
@@ -82,58 +85,33 @@ AS65 Assembler for R6502 [1.42].  Copyright 1994-2007, Frank A. Kingswood       
                                          sta     dispcur_h
                                          endm
                                          
-                             putchar     macro   source
-                                         ldx     #0
-                                         lda     (source,x)
-                                         sta     (dispcur_l,x)
-                                         ldx     dispcur_l
-                                         ldy     dispcur_h
-                                         cpy     #hi screentop
-                                         bne     putchar_inc
-                                         cpx     #lo screentop
-                                         bne     putchar_inc
-                                         ldx     #lo screenbase
-                                         ldy     #hi screenbase
-                                         lda     #0
-                                         bne     putchar_sto
-                             putchar_inc inx
-                                         bne     putchar_sto
-                                         iny
-                             putchar_sto stx     dispcur_l
-                                         sty     dispcur_h
+                             flushkb     macro
+                                         lda     keybrdtail
+                                         sta     keybrdhead
                                          endm
                                          
-0300 :                       putchar_f   
-                                         putchar $10
-0300 : a200             [ 2]>            ldx     #0
-0302 : a110             [ 6]>            lda     ($10,x)
-0304 : 81b0             [ 6]>            sta     (dispcur_l,x)
-0306 : a6b0             [ 3]>            ldx     dispcur_l
-0308 : a4b1             [ 3]>            ldy     dispcur_h
-030a : c007             [ 2]>            cpy     #hi screentop
-030c : d00c             [ 3]>            bne     putchar_inc
-030e : e0ff             [ 2]>            cpx     #lo screentop
-0310 : d008             [ 3]>            bne     putchar_inc
-0312 : a200             [ 2]>            ldx     #lo screenbase
-0314 : a004             [ 2]>            ldy     #hi screenbase
-0316 : a900             [ 2]>            lda     #0
-0318 : d004             [ 3]>            bne     putchar_sto
-031a : e8               [ 2]>putchar_inc inx
-031b : d001             [ 3]>            bne     putchar_sto
-031d : c8               [ 2]>            iny
-031e : 86b0             [ 3]>putchar_sto stx     dispcur_l
-0320 : 84b1             [ 3]>            sty     dispcur_h
-                             
-0322 : 60               [ 6]             rts
-                                         
-0323 : a000             [ 2] disp        ldy     #0
-0325 : b110             [ 5] disp_loop   lda     (arg_l),y
-0327 : c900             [ 2]             cmp     #0
-0329 : f007             [ 3]             beq     disp_ret
-032b : 990004           [ 5]             sta     screenbase,y
-032e : c8               [ 2]             iny
-032f : 4c2503           [ 3]             jmp     disp_loop
-0332 : 60               [ 6] disp_ret    rts
+f000 : a6b0             [ 3] inccur      ldx     dispcur_l       ; ARGS: N/A, STACK: 2
+f002 : a4b1             [ 3]             ldy     dispcur_h
+f004 : c007             [ 2]             cpy     #hi screentop
+f006 : d00c             [ 3]             bne     inccur_inc
+f008 : e0e7             [ 2]             cpx     #lo screentop
+f00a : d008             [ 3]             bne     inccur_inc
+f00c : a200             [ 2]             ldx     #lo screenbase
+f00e : a004             [ 2]             ldy     #hi screenbase
+f010 : a900             [ 2]             lda     #0
+f012 : d004             [ 3]             bne     inccur_sto
+f014 : e8               [ 2] inccur_inc  inx
+f015 : d001             [ 3]             bne     inccur_sto
+f017 : c8               [ 2]             iny
+f018 : 86b0             [ 3] inccur_sto  stx     dispcur_l
+f01a : 84b1             [ 3]             sty     dispcur_h
+f01c : 60               [ 6]             rts
+                                        
+f01d : a200             [ 2] putchar     ldx     #0              ; ARGS: Char, STACK: 2
+f01f : a110             [ 6]             lda     (arg_16,x)
+f021 : 81b0             [ 6]             sta     (dispcur_l,x)
+f023 : 2000f0           [ 6]             jsr     inccur
+f026 : 60               [ 6]             rts
                              
                              ;*------------------------------------------------------------------*
                              ;*                             Keyboard                             *
@@ -153,8 +131,8 @@ AS65 Assembler for R6502 [1.42].  Copyright 1994-2007, Frank A. Kingswood       
                                          lda     #lo keybrdtop
                                          sec
                                          sbc     #lo keybrdbase
-                                         clc
-                                         adc     #1    
+                                         ; clc
+                                         ; adc     #1    
                                          ; A contains size of buffer
                                          sec
                                          cmp     keybrdhead
@@ -172,157 +150,156 @@ AS65 Assembler for R6502 [1.42].  Copyright 1994-2007, Frank A. Kingswood       
                              ;*                        Kernel Initialize                         *
                              ;*------------------------------------------------------------------*
                                          code
-f000 =                                   org     $f000
-f000 : 78               [ 2] init        sti ; ALL FLAGS NEED TO BE RESEt ON Boot
-f001 : a900             [ 2]             lda     #$00
-f003 : 8581             [ 3]             sta     knxttask
-f005 : 4c8cf0           [ 3]             jmp     lodstk
+f027 : 78               [ 2] init        sti ; ALL FLAGS NEED TO BE RESEt ON Boot
+f028 : a900             [ 2]             lda     #$00
+f02a : 8581             [ 3]             sta     knxttask
+f02c : 4cb0f0           [ 3]             jmp     lodstk
                                          
-f008 : 4c08f0           [ 3] infloop     jmp     infloop
+f02f : 4c2ff0           [ 3] infloop     jmp     infloop
                              
-f00b :                       start0
-f00b : 78               [ 2]             sti
+f032 :                       start0
+f032 : 78               [ 2]             sti
                                          resetdisp
-f00c : a900             [ 2]>            lda     #lo screenbase
-f00e : 85b0             [ 3]>            sta     dispcur_l
-f010 : a904             [ 2]>            lda     #hi screenbase
-f012 : 85b1             [ 3]>            sta     dispcur_h
+f033 : a900             [ 2]>            lda     #lo screenbase
+f035 : 85b0             [ 3]>            sta     dispcur_l
+f037 : a904             [ 2]>            lda     #hi screenbase
+f039 : 85b1             [ 3]>            sta     dispcur_h
                              
-f014 :                       keyloop     
+f03b :                       keyloop     
                                          getchar
-f014 : a200             [ 2]>            ldx     #0
-f016 : ac8003           [ 4]>            ldy     keybrdhead
-f019 : cc8103           [ 4]>            cpy     keybrdtail
-f01c : f020             [ 3]>            beq     getchar_ret
+f03b : a200             [ 2]>            ldx     #0
+f03d : ac8003           [ 4]>            ldy     keybrdhead
+f040 : cc8103           [ 4]>            cpy     keybrdtail
+f043 : f01d             [ 3]>            beq     getchar_ret
                             >            ; We know that there is at least one char in the buffer
-f01e : ac8003           [ 4]>            ldy     keybrdhead  ; tmp
-f021 : be0003           [ 4]>            ldx     keybrdbase,y    ; x contains the char
+f045 : ac8003           [ 4]>            ldy     keybrdhead  ; tmp
+f048 : be0003           [ 4]>            ldx     keybrdbase,y    ; x contains the char
                             >            
-f024 : a97f             [ 2]>            lda     #lo keybrdtop
-f026 : 38               [ 2]>            sec
-f027 : e900             [ 2]>            sbc     #lo keybrdbase
-f029 : 18               [ 2]>            clc
-f02a : 6901             [ 2]>            adc     #1    
+f04b : a97f             [ 2]>            lda     #lo keybrdtop
+f04d : 38               [ 2]>            sec
+f04e : e900             [ 2]>            sbc     #lo keybrdbase
+                            >            ; clc
+                            >            ; adc     #1    
                             >            ; A contains size of buffer
-f02c : 38               [ 2]>            sec
-f02d : cd8003           [ 4]>            cmp     keybrdhead
-f030 : d005             [ 3]>            bne     getchar_inc
-f032 : a000             [ 2]>getchar_rst ldy     #0
-f034 : 4c3bf0           [ 3]>            jmp     getchar_sto
-f037 : ac8003           [ 4]>getchar_inc ldy     keybrdhead
-f03a : c8               [ 2]>            iny
-f03b : 8c8003           [ 4]>getchar_sto sty     keybrdhead
+f050 : 38               [ 2]>            sec
+f051 : cd8003           [ 4]>            cmp     keybrdhead
+f054 : d005             [ 3]>            bne     getchar_inc
+f056 : a000             [ 2]>getchar_rst ldy     #0
+f058 : 4c5ff0           [ 3]>            jmp     getchar_sto
+f05b : ac8003           [ 4]>getchar_inc ldy     keybrdhead
+f05e : c8               [ 2]>            iny
+f05f : 8c8003           [ 4]>getchar_sto sty     keybrdhead
                             >
-f03e : 8e0002           [ 4]>getchar_ret stx     getchar_buf
+f062 : 8e0002           [ 4]>getchar_ret stx     getchar_buf
                              
-f041 : ad0002           [ 4]             lda     getchar_buf
-f044 : f00b             [ 3]             beq     keyloop_lop
+f065 : ad0002           [ 4]             lda     getchar_buf
+f068 : f00b             [ 3]             beq     keyloop_lop
                                          ldargpt getchar_buf
-f046 : a900             [ 2]>            lda #lo getchar_buf
-f048 : 8510             [ 3]>            sta arg_l
-f04a : a902             [ 2]>            lda #hi getchar_buf
-f04c : 8511             [ 3]>            sta arg_h
+f06a : a900             [ 2]>            lda #lo getchar_buf
+f06c : 8510             [ 3]>            sta arg_l
+f06e : a902             [ 2]>            lda #hi getchar_buf
+f070 : 8511             [ 3]>            sta arg_h
                              
-f04e : 200003           [ 6]             jsr     putchar_f
-f051 : 4c14f0           [ 3] keyloop_lop jmp     keyloop
-f054 : 58               [ 2]             cli
-f055 : 4c08f0           [ 3]             jmp     infloop
+f072 : 201df0           [ 6]             jsr     putchar
+                                         ; flushkb
+f075 : 4c3bf0           [ 3] keyloop_lop jmp     keyloop
+f078 : 58               [ 2]             cli
+f079 : 4c2ff0           [ 3]             jmp     infloop
                              
-f058 :                       start1
-f058 : 4c08f0           [ 3]             jmp     infloop
+f07c :                       start1
+f07c : 4c2ff0           [ 3]             jmp     infloop
                              
-f05b :                       start2
-f05b : 4c08f0           [ 3]             jmp     infloop
+f07f :                       start2
+f07f : 4c2ff0           [ 3]             jmp     infloop
                              
-f05e :                       start3
-f05e : 4c08f0           [ 3]             jmp     infloop
+f082 :                       start3
+f082 : 4c2ff0           [ 3]             jmp     infloop
                              
                              ;*------------------------------------------------------------------*
                              ;*                    Interrupt Service Routine                     *
                              ;*------------------------------------------------------------------*
-f061 :                       irq
-f061 : 48               [ 3]             pha                 ; Save registers to current stack
-f062 : 8a               [ 2]             txa
-f063 : 48               [ 3]             pha
-f064 : 98               [ 2]             tya
-f065 : 48               [ 3]             pha
+f085 :                       irq
+f085 : 48               [ 3]             pha                 ; Save registers to current stack
+f086 : 8a               [ 2]             txa
+f087 : 48               [ 3]             pha
+f088 : 98               [ 2]             tya
+f089 : 48               [ 3]             pha
                                          
-f066 :                       savstk
-f066 : a480             [ 3]             ldy     kcurtask
-f068 : a900             [ 2]             lda     #00
-f06a : 8590             [ 3]             sta     kstkpg_l
-f06c : b98600           [ 4]             lda     kstkpgs_s,y
-f06f : 8591             [ 3]             sta     kstkpg_h
-f071 : ba               [ 2]             tsx
-f072 : 9682             [ 4]             stx     kstkpnts_s,y
-f074 : 86a2             [ 3]             stx     ktmp2
-f076 : a000             [ 2]             ldy     #lo $0100
-f078 : 84a0             [ 3]             sty     ktmp0
-f07a : a001             [ 2]             ldy     #hi $0100
-f07c : 84a1             [ 3]             sty     ktmp1
-f07e : a4a2             [ 3]             ldy     ktmp2
-f080 :                       savstk_loop
-f080 : b1a0             [ 5]             lda     (ktmp0),y
-f082 : 9190             [ 5]             sta     (kstkpg_l),y
-f084 : c0ff             [ 2]             cpy     #$ff
-f086 : f004             [ 3]             beq     lodstk
-f088 : c8               [ 2]             iny
-f089 : 4c80f0           [ 3]             jmp     savstk_loop
-f08c :                       lodstk
-f08c : a481             [ 3]             ldy     knxttask
-f08e : a900             [ 2]             lda     #00
-f090 : 8590             [ 3]             sta     kstkpg_l
-f092 : b98600           [ 4]             lda     kstkpgs_s,y
-f095 : 8591             [ 3]             sta     kstkpg_h
-f097 : b682             [ 4]             ldx     kstkpnts_s,y
-f099 : 9a               [ 2]             txs
-f09a : 86a2             [ 3]             stx     ktmp2
-f09c : a000             [ 2]             ldy     #lo $0100
-f09e : 84a0             [ 3]             sty     ktmp0
-f0a0 : a001             [ 2]             ldy     #hi $0100
-f0a2 : 84a1             [ 3]             sty     ktmp1
-f0a4 : a4a2             [ 3]             ldy     ktmp2
-f0a6 :                       lodstk_loop
-f0a6 : b190             [ 5]             lda     (kstkpg_l),y
-f0a8 : 91a0             [ 5]             sta     (ktmp0),y
-f0aa : c0ff             [ 2]             cpy     #$ff
-f0ac : f004             [ 3]             beq     irq_ret
-f0ae : c8               [ 2]             iny
-f0af : 4ca6f0           [ 3]             jmp     lodstk_loop
-f0b2 :                       irq_ret
-f0b2 : a581             [ 3]             lda     knxttask
-f0b4 : 8580             [ 3]             sta     kcurtask
-f0b6 : 68               [ 4]             pla
-f0b7 : a8               [ 2]             tay
-f0b8 : 68               [ 4]             pla
-f0b9 : aa               [ 2]             tax
-f0ba : 68               [ 4]             pla
-f0bb : 40               [ 6]             rti
+f08a :                       savstk
+f08a : a480             [ 3]             ldy     kcurtask
+f08c : a900             [ 2]             lda     #00
+f08e : 8590             [ 3]             sta     kstkpg_l
+f090 : b98600           [ 4]             lda     kstkpgs_s,y
+f093 : 8591             [ 3]             sta     kstkpg_h
+f095 : ba               [ 2]             tsx
+f096 : 9682             [ 4]             stx     kstkpnts_s,y
+f098 : 86a2             [ 3]             stx     ktmp2
+f09a : a000             [ 2]             ldy     #lo $0100
+f09c : 84a0             [ 3]             sty     ktmp0
+f09e : a001             [ 2]             ldy     #hi $0100
+f0a0 : 84a1             [ 3]             sty     ktmp1
+f0a2 : a4a2             [ 3]             ldy     ktmp2
+f0a4 :                       savstk_loop
+f0a4 : b1a0             [ 5]             lda     (ktmp0),y
+f0a6 : 9190             [ 5]             sta     (kstkpg_l),y
+f0a8 : c0ff             [ 2]             cpy     #$ff
+f0aa : f004             [ 3]             beq     lodstk
+f0ac : c8               [ 2]             iny
+f0ad : 4ca4f0           [ 3]             jmp     savstk_loop
+f0b0 :                       lodstk
+f0b0 : a481             [ 3]             ldy     knxttask
+f0b2 : a900             [ 2]             lda     #00
+f0b4 : 8590             [ 3]             sta     kstkpg_l
+f0b6 : b98600           [ 4]             lda     kstkpgs_s,y
+f0b9 : 8591             [ 3]             sta     kstkpg_h
+f0bb : b682             [ 4]             ldx     kstkpnts_s,y
+f0bd : 9a               [ 2]             txs
+f0be : 86a2             [ 3]             stx     ktmp2
+f0c0 : a000             [ 2]             ldy     #lo $0100
+f0c2 : 84a0             [ 3]             sty     ktmp0
+f0c4 : a001             [ 2]             ldy     #hi $0100
+f0c6 : 84a1             [ 3]             sty     ktmp1
+f0c8 : a4a2             [ 3]             ldy     ktmp2
+f0ca :                       lodstk_loop
+f0ca : b190             [ 5]             lda     (kstkpg_l),y
+f0cc : 91a0             [ 5]             sta     (ktmp0),y
+f0ce : c0ff             [ 2]             cpy     #$ff
+f0d0 : f004             [ 3]             beq     irq_ret
+f0d2 : c8               [ 2]             iny
+f0d3 : 4ccaf0           [ 3]             jmp     lodstk_loop
+f0d6 :                       irq_ret
+f0d6 : a581             [ 3]             lda     knxttask
+f0d8 : 8580             [ 3]             sta     kcurtask
+f0da : 68               [ 4]             pla
+f0db : a8               [ 2]             tay
+f0dc : 68               [ 4]             pla
+f0dd : aa               [ 2]             tax
+f0de : 68               [ 4]             pla
+f0df : 40               [ 6]             rti
                              
                              ;*------------------------------------------------------------------*
                              ;*                        Build Information                         *
                              ;*------------------------------------------------------------------*
                                          code
-f0bc : 000101                build_code  fcb     0,1,1       ; VERSION X.Y.Z
-f0bf : 56455253494f4e        build_ver   fcc     "VERSION"
-f0c6 : 00                                fcb     0
-f0c7 : 30784f53              build_name  fcc     "0xOS"
-f0cb : 00                                fcb     0
+f0e0 : 000101                build_code  fcb     0,1,1       ; VERSION X.Y.Z
+f0e3 : 56455253494f4e        build_ver   fcc     "VERSION"
+f0ea : 00                                fcb     0
+f0eb : 30784f53              build_name  fcc     "0xOS"
+f0ef : 00                                fcb     0
                              
                              ;*------------------------------------------------------------------*
                              ;*                             Vectors                              *
                              ;*------------------------------------------------------------------*
                                          code
 fffa =                                   org     $fffa
-fffa : 00f0                  nmivector   fcw     init    ; nmi vector
-fffc : 00f0                  resvector   fcw     init    ; reset vector
-fffe : 61f0                  irqvector   fcw     irq     ; irq vector
+fffa : 27f0                  nmivector   fcw     init    ; nmi vector
+fffc : 27f0                  resvector   fcw     init    ; reset vector
+fffe : 85f0                  irqvector   fcw     irq     ; irq vector
                                          end
                              
 -------------------------------------------- Memory Usage Map ('x'=used, '-'=unused) ---------------------------------------------
 
 0080 : --xxxxxxxx------ ---------------- ---------------- ---------------- 
-0300 : xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx xxx------------- 
 08c0 : ---------------- ---------------- ---------------- --------xxxxxx-- 
 09c0 : ---------------- ---------------- ---------------- --------xxxxxx-- 
 0ac0 : ---------------- ---------------- ---------------- --------xxxxxx-- 
@@ -330,7 +307,7 @@ fffe : 61f0                  irqvector   fcw     irq     ; irq vector
 f000 : xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx 
 f040 : xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx 
 f080 : xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx 
-f0c0 : xxxxxxxxxxxx---- ---------------- ---------------- ---------------- 
+f0c0 : xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxx ---------------- 
 ffc0 : ---------------- ---------------- ---------------- ----------xxxxxx 
 
 No errors in pass 2.

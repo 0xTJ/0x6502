@@ -1,5 +1,6 @@
 arg_l       equ     $10
 arg_h       equ     $11
+arg_16      equ     $10
 kcurtask    equ     $80
 knxttask    equ     $81
 kstkpnts_s  equ     $82
@@ -18,7 +19,7 @@ dispcur_h   equ     $b1
 stackbase   equ     $0100
 
 screenbase  equ     $0400
-screentop   equ     $07ff
+screentop   equ     $07e7
 
 keybrdbase  equ     $0300   ; keybrd must be contained within single page
 keybrdtop   equ     $037F
@@ -50,6 +51,8 @@ task3_stk   equ     $0b00
             org     $0200
             data
             org     $0300
+            code
+            org     $f000
             
 ;*------------------------------------------------------------------*
 ;*                          General Macros                          *
@@ -78,39 +81,33 @@ resetdisp   macro
             sta     dispcur_h
             endm
             
-putchar     macro   source
-            ldx     #0
-            lda     (source,x)
-            sta     (dispcur_l,x)
-            ldx     dispcur_l
+flushkb     macro
+            lda     keybrdtail
+            sta     keybrdhead
+            endm
+            
+inccur      ldx     dispcur_l       ; ARGS: N/A, STACK: 2
             ldy     dispcur_h
             cpy     #hi screentop
-            bne     putchar_inc
+            bne     inccur_inc
             cpx     #lo screentop
-            bne     putchar_inc
+            bne     inccur_inc
             ldx     #lo screenbase
             ldy     #hi screenbase
             lda     #0
-            bne     putchar_sto
-putchar_inc inx
-            bne     putchar_sto
+            bne     inccur_sto
+inccur_inc  inx
+            bne     inccur_sto
             iny
-putchar_sto stx     dispcur_l
+inccur_sto  stx     dispcur_l
             sty     dispcur_h
-            endm
-            
-putchar_f   
-            putchar arg_l
             rts
-            
-disp        ldy     #0
-disp_loop   lda     (arg_l),y
-            cmp     #0
-            beq     disp_ret
-            sta     screenbase,y
-            iny
-            jmp     disp_loop
-disp_ret    rts
+           
+putchar     ldx     #0              ; ARGS: Char, STACK: 2
+            lda     (arg_16,x)
+            sta     (dispcur_l,x)
+            jsr     inccur
+            rts
 
 ;*------------------------------------------------------------------*
 ;*                             Keyboard                             *
@@ -130,8 +127,8 @@ getchar     macro
             lda     #lo keybrdtop
             sec
             sbc     #lo keybrdbase
-            clc
-            adc     #1    
+            ; clc
+            ; adc     #1    
             ; A contains size of buffer
             sec
             cmp     keybrdhead
@@ -149,7 +146,6 @@ getchar_ret stx     getchar_buf
 ;*                        Kernel Initialize                         *
 ;*------------------------------------------------------------------*
             code
-            org     $f000
 init        sti ; ALL FLAGS NEED TO BE RESEt ON Boot
             lda     #$00
             sta     knxttask
@@ -165,7 +161,8 @@ keyloop
             lda     getchar_buf
             beq     keyloop_lop
             ldargpt getchar_buf
-            jsr     putchar_f
+            jsr     putchar
+            ; flushkb
 keyloop_lop jmp     keyloop
             cli
             jmp     infloop

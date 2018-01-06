@@ -21,9 +21,9 @@ void setupMachine() {
 void resetMachine() {
     for (uint16_t i = 0; i < defd_page_count; i++) {
         if (page_defs[i].type == DRAM) {
-            for (uint16_t a = 0; a < 0x100; a++) {
-                write6502((((uint16_t)page_defs[i].page) << 8) + a, 0);
-            }
+            // for (uint16_t a = 0; a < 0x100; a++) {
+                // write6502((((uint16_t)page_defs[i].page) << 8) + a, 0);
+            // }
         }
         else if (page_defs[i].type == IO) {
             page_defs[i].ioInitFunc();
@@ -80,4 +80,23 @@ void write6502(uint16_t address, uint8_t value) {
                 return;
         }
     }
+}
+
+void get_keys(unsigned char c) {
+    uint8_t head = read6502(KEYBRD_HEAD);
+    uint8_t tail = read6502(KEYBRD_TAIL);
+    uint8_t next_tail = tail + 1;
+    if (next_tail > (KEYBRD_TOP - KEYBRD_BASE)) {
+        next_tail = 0;
+    }
+    uint8_t next_head = head;
+    if (next_tail == head) {
+        next_head = head + 1;
+        if (next_head > (KEYBRD_TOP - KEYBRD_BASE)) {
+            next_head = 0;
+        }
+    }
+    write6502(KEYBRD_BASE + tail, c);
+    write6502(KEYBRD_HEAD, next_head);
+    write6502(KEYBRD_TAIL, next_tail);
 }

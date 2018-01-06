@@ -65,12 +65,11 @@ static void print_screen(bool force_show) {
 }
 
 int emulator() {
-    
     resetMachine();
     reset6502();
-    
     bool running = true;
     bool clock_manual = true;
+    unsigned long long int last_disp = 0;
     while (running) {
         if (clock_manual == true) {
             int nread;
@@ -83,7 +82,9 @@ int emulator() {
                 uart_driver_delete(CONFIG_CONSOLE_UART_NUM);
                 setvbuf(stdin, NULL, _IOFBF, 1);
                 setvbuf(stdout, NULL, _IOFBF, 1);
+                printf("ENTER INTERACTIVE\n");
                 print_screen(true);
+                last_disp = xTaskGetTickCount();
                 break;
             case 'q':
             case 'Q':
@@ -96,26 +97,52 @@ int emulator() {
             case 'd':
             case 'D':
                 print_screen(true);
+                putchar('\n');
                 break;
             case 's':
             case 'S':
                 step6502();
+                break;
+            case 'm':
+            case 'M':
+                step6502();
+                print_status();
+                break;
+            case 't':
+            case 'T':
+                nread = fread(&c, 1, 1, stdin);
+                get_keys(c);
+                break;
+            case 'r':
+            case 'R':
+                ;char read_buf[5] = {0};
+                nread = fread(read_buf, 1, 4, stdin);
+                printf("%04x contains %02x\n", (unsigned int) strtoul(read_buf, NULL, 16), read6502(strtoul(read_buf, NULL, 16)));
+                break;
             }
         }
         else {
-            char c;
+            int c;
             c = getchar();
-            if (c == '\t') {
+            if (c == -1) {
+            }
+            else if (c == '\t') {
                 clock_manual = true;
                 setvbuf(stdin, NULL, _IONBF, 0);
                 setvbuf(stdout, NULL, _IONBF, 0);
                 uart_driver_install(CONFIG_CONSOLE_UART_NUM, 256, 0, 0, NULL, 0);
                 esp_vfs_dev_uart_use_driver(CONFIG_CONSOLE_UART_NUM);
-                printf("EXIT AUTOCLOCK\n");
+                printf("EXIT INTERACTIVE\n");
                 continue;
             }
+            else {
+                get_keys(c);
+            }            
             step6502();
-            print_screen(false);
+            if (last_disp + 2 < xTaskGetTickCount()) {
+                last_disp = xTaskGetTickCount();
+                print_screen(false);
+            }
         }
     }
     return 0;
