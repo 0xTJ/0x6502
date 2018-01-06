@@ -1,4 +1,38 @@
-
+;*------------------------------------------------------------------*
+;*								    *
+;*			 Mini Multitasking Kernel		    *
+;*			     for 6502 Systems			    *
+;*								    *
+;*			    by Joachim Deboy			    *
+;*								    *
+;*    This mini kernel uses IRQ interrupts from a free running	    *
+;*    6522-timer for task switching. It currently supports 4	    *
+;*    concurrent tasks. The tasks receive control for fixed time    *
+;*    slices in a round robin method. It should be easily possible  *
+;*    to implement a priority driven task selector in the inter-    *
+;*    rupt service routine.					    *
+;*								    *
+;*    For performance reasons, the stack page will not be copied    *
+;*    for every task switch, but is divided into 4 parts, one for   *
+;*    each task. Because of that only the stack pointer and the     *
+;*    other processor registers must be saved and loaded, when	    *
+;*    performing a task switch. A disadvantage is the 'home made'   *
+;*    further limitation of the already short stack area.	    *
+;*								    *
+;*    Two macros are implemented to allow a simple kind of seria-   *
+;*    lization between concurrent tasks. A call of the enq-macro    *
+;*    locks task switching until the deq-macro is used. This also   *
+;*    prevents a discuption of a time critical process. 	    *
+;*								    *
+;*    This software is part of a heater control software, which     *
+;*    runs at my home for several years now.			    *
+;*    It may be freely used and modified to suit other possible     *
+;*    applications, but i can't guarantee for the usablity          *
+;*    in any way. Use it at for own risk.			    *
+;*								    *
+;*    If you have any comments, questions, further ideas or if you  *
+;*    find any bugs, please contact me under joachim@deboy.de	    *
+;*								    *
 ;*------------------------------------------------------------------*
 ;*			   page 0 addresses			    *
 ;*------------------------------------------------------------------*

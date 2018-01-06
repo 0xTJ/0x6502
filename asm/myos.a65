@@ -1,74 +1,183 @@
-arg_16_l    equ     $10
-arg_16_h    equ     arg_16_l + 1
+arg_l       equ     $10
+arg_h       equ     $11
 kcurtask    equ     $80
 knxttask    equ     $81
 kstkpnts_s  equ     $82
 kstkpnts_e  equ     kstkpnts_s + 3
 kstkpgs_s   equ     $86
 kstkpgs_e   equ     kstkpgs_s + 3
-kstkpg_16_l equ     $90
-kstkpg_16_h equ     kstkpg_16_l + 1
+kstkpg_l    equ     $90
+kstkpg_h    equ     kstkpg_l + 1
 ktmp0       equ     $a0
 ktmp1       equ     $a1
 ktmp2       equ     $a2
 ktmp3       equ     $a3
+dispcur_l   equ     $b0
+dispcur_h   equ     $b1
 
-screenbase  equ     $0200
-spritebase  equ     $0220
+stackbase   equ     $0100
+
+screenbase  equ     $0400
+screentop   equ     $07ff
+
+keybrdbase  equ     $0300   ; keybrd must be contained within single page
+keybrdtop   equ     $037F
+keybrdhead  equ     $0380
+keybrdtail  equ     $0381
 
             data
             org     kstkpnts_s
-            db      $f7, $f7, $f7, $f7
+            fcb      $f7, $f7, $f7, $f7
             org     kstkpgs_s
-            db      $04, $05, $06, $07
+            fcb      $08, $09, $0a, $0b
 
-            org     $04f8
-            db      $00, $00, $00, $20, lo start0, hi start0
-            org     $05f8
-            db      $00, $00, $00, $20, lo start1, hi start1
-            org     $06f8
-            db      $00, $00, $00, $20, lo start2, hi start2
-            org     $07f8
-            db      $00, $00, $00, $20, lo start3, hi start3
+initstkoffs equ     $f8
+task0_stk   equ     $0800
+task1_stk   equ     $0900
+task2_stk   equ     $0a00
+task3_stk   equ     $0b00
 
-;*------------------------------------------------------------------*
-;*                        Kernel Initialize                         *
-;*------------------------------------------------------------------*
-            code
-            org     $f000
-init        lda     #lo build_name
-            sta     arg_16_l
-            lda     #hi build_name
-            sta     arg_16_h
-            jsr     disp
-            sti
-            lda     #$00
-            sta     knxttask
-            jmp     lodstk
+            org     task0_stk + initstkoffs
+            fcb     $00, $00, $00, $20, lo start0, hi start0
+            org     task1_stk + initstkoffs
+            fcb     $00, $00, $00, $20, lo start1, hi start1
+            org     task2_stk + initstkoffs
+            fcb     $00, $00, $00, $20, lo start2, hi start2
+            org     task3_stk + initstkoffs
+            fcb     $00, $00, $00, $20, lo start3, hi start3
+
+            bss
+            org     $0200
+            data
+            org     $0300
             
-infloop     jmp     infloop
+;*------------------------------------------------------------------*
+;*                          General Macros                          *
+;*------------------------------------------------------------------*
+ldargpt     macro   argpointer
+            lda #lo argpointer
+            sta arg_l
+            lda #hi argpointer
+            sta arg_h
+            endm
 
-start0      cli
-            jmp     infloop
+;*------------------------------------------------------------------*
+;*                             Display                              *
+;*------------------------------------------------------------------*
+string      macro   name,length,string
+            scruct  name
+            fcb     length
+            fcc     string
+            end scruct
+            endm
 
-start1      jmp     infloop
+resetdisp   macro
+            lda     #lo screenbase
+            sta     dispcur_l
+            lda     #hi screenbase
+            sta     dispcur_h
+            endm
             
-
-start2      jmp     infloop
-
-start3      jmp     infloop
-
-;*------------------------------------------------------------------*
-;*                         Display Routines                         *
-;*------------------------------------------------------------------*
+putchar     macro   source
+            ldx     #0
+            lda     (source,x)
+            sta     (dispcur_l,x)
+            ldx     dispcur_l
+            ldy     dispcur_h
+            cpy     #hi screentop
+            bne     putchar_inc
+            cpx     #lo screentop
+            bne     putchar_inc
+            ldx     #lo screenbase
+            ldy     #hi screenbase
+            lda     #0
+            bne     putchar_sto
+putchar_inc inx
+            bne     putchar_sto
+            iny
+putchar_sto stx     dispcur_l
+            sty     dispcur_h
+            endm
+            
+putchar_f   
+            putchar arg_l
+            rts
+            
 disp        ldy     #0
-disp_loop   lda     (arg_16_l),y
+disp_loop   lda     (arg_l),y
             cmp     #0
             beq     disp_ret
             sta     screenbase,y
             iny
             jmp     disp_loop
 disp_ret    rts
+
+;*------------------------------------------------------------------*
+;*                             Keyboard                             *
+;*------------------------------------------------------------------*          
+            bss
+getchar_buf rmb     1
+            code           
+getchar     macro
+            ldx     #0
+            ldy     keybrdhead
+            cpy     keybrdtail
+            beq     getchar_ret
+            ; We know that there is at least one char in the buffer
+            ldy     keybrdhead  ; tmp
+            ldx     keybrdbase,y    ; x contains the char
+            
+            lda     #lo keybrdtop
+            sec
+            sbc     #lo keybrdbase
+            clc
+            adc     #1    
+            ; A contains size of buffer
+            sec
+            cmp     keybrdhead
+            bne     getchar_inc
+getchar_rst ldy     #0
+            jmp     getchar_sto
+getchar_inc ldy     keybrdhead
+            iny
+getchar_sto sty     keybrdhead
+
+getchar_ret stx     getchar_buf
+            endm
+            
+;*------------------------------------------------------------------*
+;*                        Kernel Initialize                         *
+;*------------------------------------------------------------------*
+            code
+            org     $f000
+init        sti ; ALL FLAGS NEED TO BE RESEt ON Boot
+            lda     #$00
+            sta     knxttask
+            jmp     lodstk
+            
+infloop     jmp     infloop
+
+start0
+            sti
+            resetdisp
+keyloop     
+            getchar
+            lda     getchar_buf
+            beq     keyloop_lop
+            ldargpt getchar_buf
+            jsr     putchar_f
+keyloop_lop jmp     keyloop
+            cli
+            jmp     infloop
+
+start1
+            jmp     infloop
+
+start2
+            jmp     infloop
+
+start3
+            jmp     infloop
 
 ;*------------------------------------------------------------------*
 ;*                    Interrupt Service Routine                     *
@@ -82,10 +191,10 @@ irq
             
 savstk
             ldy     kcurtask
-            lda     #0
-            sta     kstkpg_16_l
+            lda     #00
+            sta     kstkpg_l
             lda     kstkpgs_s,y
-            sta     kstkpg_16_h
+            sta     kstkpg_h
             tsx
             stx     kstkpnts_s,y
             stx     ktmp2
@@ -96,17 +205,17 @@ savstk
             ldy     ktmp2
 savstk_loop
             lda     (ktmp0),y
-            sta     (kstkpg_16_l),y
+            sta     (kstkpg_l),y
             cpy     #$ff
             beq     lodstk
             iny
             jmp     savstk_loop
 lodstk
             ldy     knxttask
-            lda     #0
-            sta     kstkpg_16_l
+            lda     #00
+            sta     kstkpg_l
             lda     kstkpgs_s,y
-            sta     kstkpg_16_h
+            sta     kstkpg_h
             ldx     kstkpnts_s,y
             txs
             stx     ktmp2
@@ -116,7 +225,7 @@ lodstk
             sty     ktmp1
             ldy     ktmp2
 lodstk_loop
-            lda     (kstkpg_16_l),y
+            lda     (kstkpg_l),y
             sta     (ktmp0),y
             cpy     #$ff
             beq     irq_ret
@@ -136,7 +245,7 @@ irq_ret
 ;*                        Build Information                         *
 ;*------------------------------------------------------------------*
             code
-build_code  fcb     0,1,0       ; VERSION 0.1.0
+build_code  fcb     0,1,1       ; VERSION X.Y.Z
 build_ver   fcc     "VERSION"
             fcb     0
 build_name  fcc     "0xOS"
@@ -147,7 +256,7 @@ build_name  fcc     "0xOS"
 ;*------------------------------------------------------------------*
             code
             org     $fffa
-nmivector   dw      init    ; nmi vector
-resvector   dw      init    ; reset vector
-irqvector   dw      irq     ; irq vector
+nmivector   fcw     init    ; nmi vector
+resvector   fcw     init    ; reset vector
+irqvector   fcw     irq     ; irq vector
             end
