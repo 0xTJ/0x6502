@@ -1,19 +1,16 @@
 BINARIES = myos.bin myos.hex myos.hex.h
-COMPILE = ../tools/as65 -l -m -w -h0 -u -c
+COMPILE = ../tools/cc65/bin/ca65
+LINK = ../tools/cc65/bin/ld65
 
-.SUFFIXES: .a65 .bin .hex
+# .SUFFIXES: .s .bin .hex
 
-# symbolic targets:
-all:    myos.hex
+all: 0x6502.bin
 
-.a65.hex:
-	$(COMPILE) -s2 $<
+.s.o:
+	$(COMPILE) -l $*.lst $^ -o $@
 
-.a65.bin:
-	$(COMPILE) $<
-
-%.hex.h: %.hex
-	py create_hex.py $<
+0x6502.bin: 0x6502.o
+	$(LINK) -m 0x6502.mod -C 0x6502.ld $^ -o $@
     
 clean:
-	rm -f $(BINARIES) *.lst *.dbg
+	rm -f *.lst *.o *.bin *.mod

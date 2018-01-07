@@ -1,30 +1,30 @@
-arg_l       equ     $10
-arg_h       equ     $11
-arg_16      equ     $10
-kcurtask    equ     $80
-knxttask    equ     $81
-kstkpnts_s  equ     $82
-kstkpnts_e  equ     kstkpnts_s + 3
-kstkpgs_s   equ     $86
-kstkpgs_e   equ     kstkpgs_s + 3
-kstkpg_l    equ     $90
-kstkpg_h    equ     kstkpg_l + 1
-ktmp0       equ     $a0
-ktmp1       equ     $a1
-ktmp2       equ     $a2
-ktmp3       equ     $a3
-dispcur_l   equ     $b0
-dispcur_h   equ     $b1
+arg_l   :=  $10
+arg_h       :=     $11
+arg_16      :=     $10
+kcurtask    :=     $80
+knxttask    :=     $81
+kstkpnts_s  :=     $82
+kstkpnts_e  :=     kstkpnts_s + 3
+kstkpgs_s   :=     $86
+kstkpgs_e   :=     kstkpgs_s + 3
+kstkpg_l    :=     $90
+kstkpg_h    :=     kstkpg_l + 1
+ktmp0       :=     $a0
+ktmp1       :=     $a1
+ktmp2       :=     $a2
+ktmp3       :=     $a3
+dispcur_l   :=     $b0
+dispcur_h   :=     $b1
 
-stackbase   equ     $0100
+stackbase   :=     $0100
 
-screenbase  equ     $0400
-screentop   equ     $07e7
+screenbase  :=     $0400
+screentop   :=     $07e7
 
-keybrdbase  equ     $0300   ; keybrd must be contained within single page
-keybrdtop   equ     $037F
-keybrdhead  equ     $0380
-keybrdtail  equ     $0381
+keybrdbase  :=     $0300   ; keybrd must be contained within single page
+keybrdtop   :=     $037F
+keybrdhead  :=     $0380
+keybrdtail  :=     $0381
 
             data
             org     kstkpnts_s
@@ -32,11 +32,11 @@ keybrdtail  equ     $0381
             org     kstkpgs_s
             fcb      $08, $09, $0a, $0b
 
-initstkoffs equ     $f8
-task0_stk   equ     $0800
-task1_stk   equ     $0900
-task2_stk   equ     $0a00
-task3_stk   equ     $0b00
+initstkoffs :=     $f8
+task0_stk   :=     $0800
+task1_stk   :=     $0900
+task2_stk   :=     $0a00
+task3_stk   :=     $0b00
 
             org     task0_stk + initstkoffs
             fcb     $00, $00, $00, $20, lo start0, hi start0
