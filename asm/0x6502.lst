@@ -149,23 +149,495 @@ Current file: 0x6502.s
 000000r 2                       .endif
 000000r 2               .endmacro
 000000r 2               
-000000r 1               
-000000r 1               .zeropage
-000000r 1               
-000000r 1               ;*------------------------------------------------------------------*
-000000r 1               ;*                    Interrupt Service Routine                     *
-000000r 1               ;*------------------------------------------------------------------*
-000000r 1               .code
-000000r 1  48           irq:        pha                 ; Save registers to current stack
-000001r 1  8A                       txa
-000002r 1  48                       pha
-000003r 1  98                       tya
-000004r 1  48                       pha
-000005r 1               
-000005r 1  68                       pla
-000006r 1  A8                       tay
-000007r 1  68                       pla
-000008r 1  AA                       tax
-000009r 1  68                       pla
-00000Ar 1  40                       rti
-00000Ar 1               
+000000r 1               .include "helpers.s"
+000000r 2               .ifndef INC_HELPERS_S
+000000r 2               INC_HELPERS_S = 1
+000000r 2               
+000000r 2               ;*------------------------------------------------------------------*
+000000r 2               ;*                             Helpers                              *
+000000r 2               ;*------------------------------------------------------------------*
+000000r 2               .code
+000000r 2               .macro  bra     arg
+000000r 2                       clv
+000000r 2                       bvc     arg
+000000r 2               .endmacro
+000000r 2               
+000000r 2               .macro  ldax    arg
+000000r 2                       .if (.match (.left (1, {arg}), #))
+000000r 2                           ; immediate mode
+000000r 2                           lda     #<(.right (.tcount ({arg})-1, {arg}))
+000000r 2                           ldx     #>(.right (.tcount ({arg})-1, {arg}))
+000000r 2                       .else
+000000r 2                           ; assume absolute or zero page
+000000r 2                           lda     arg
+000000r 2                           ldx     1+(arg)
+000000r 2                       .endif
+000000r 2               .endmacro
+000000r 2               
+000000r 2               .macro  stax    arg
+000000r 2                       ; assume absolute or zero page
+000000r 2                       sta     arg
+000000r 2                       stx     1+(arg)
+000000r 2               .endmacro
+000000r 2               
+000000r 2               .macro  addax   arg
+000000r 2                       .if (.match (.left (1, {arg}), #))
+000000r 2                           ; immediate mode
+000000r 2                           .error "NOT DEFINED"
+000000r 2                           ; lda     #<(.right (.tcount ({arg})-1, {arg}))
+000000r 2                           ; ldx     #>(.right (.tcount ({arg})-1, {arg}))
+000000r 2                       .else
+000000r 2                           ; assume absolute or zero page
+000000r 2                           add     arg
+000000r 2                           bcc     @Done
+000000r 2                           inx
+000000r 2                   @Done:
+000000r 2                       .endif
+000000r 2               .endmacro
+000000r 2               
+000000r 2               .macro  subax   arg
+000000r 2                       .if (.match (.left (1, {arg}), #))
+000000r 2                           ; immediate mode
+000000r 2                           .error "NOT DEFINED"
+000000r 2                           ; lda     #<(.right (.tcount ({arg})-1, {arg}))
+000000r 2                           ; ldx     #>(.right (.tcount ({arg})-1, {arg}))
+000000r 2                       .else
+000000r 2                           ; assume absolute or zero page
+000000r 2                           sub     arg
+000000r 2                           bsc     @Done
+000000r 2                           dex
+000000r 2                   @Done:
+000000r 2                       .endif
+000000r 2               .endmacro
+000000r 2               
+000000r 2               .macro  inc16   arg
+000000r 2                       .local  Skip
+000000r 2                       inc     arg
+000000r 2                       bne     Skip
+000000r 2                       inc     1+(arg)
+000000r 2               Skip:
+000000r 2               .endmacro
+000000r 2               
+000000r 2               .endif  ; NOT INC_HELPERS_S
+000000r 2               
+000000r 1               .include "display.s"
+000000r 2               .ifndef INC_DISPLAY_S
+000000r 2               INC_DISPLAY_S = 1
+000000r 2               
+000000r 2               .include "helpers.s"
+000000r 3               .ifndef INC_HELPERS_S
+000000r 3               INC_HELPERS_S = 1
+000000r 3               
+000000r 3               ;*------------------------------------------------------------------*
+000000r 3               ;*                             Helpers                              *
+000000r 3               ;*------------------------------------------------------------------*
+000000r 3               .code
+000000r 3               .macro  bra     arg
+000000r 3                       clv
+000000r 3                       bvc     arg
+000000r 3               .endmacro
+000000r 3               
+000000r 3               .macro  ldax    arg
+000000r 3                       .if (.match (.left (1, {arg}), #))
+000000r 3                           ; immediate mode
+000000r 3                           lda     #<(.right (.tcount ({arg})-1, {arg}))
+000000r 3                           ldx     #>(.right (.tcount ({arg})-1, {arg}))
+000000r 3                       .else
+000000r 3                           ; assume absolute or zero page
+000000r 3                           lda     arg
+000000r 3                           ldx     1+(arg)
+000000r 3                       .endif
+000000r 3               .endmacro
+000000r 3               
+000000r 3               .macro  stax    arg
+000000r 3                       ; assume absolute or zero page
+000000r 3                       sta     arg
+000000r 3                       stx     1+(arg)
+000000r 3               .endmacro
+000000r 3               
+000000r 3               .macro  addax   arg
+000000r 3                       .if (.match (.left (1, {arg}), #))
+000000r 3                           ; immediate mode
+000000r 3                           .error "NOT DEFINED"
+000000r 3                           ; lda     #<(.right (.tcount ({arg})-1, {arg}))
+000000r 3                           ; ldx     #>(.right (.tcount ({arg})-1, {arg}))
+000000r 3                       .else
+000000r 3                           ; assume absolute or zero page
+000000r 3                           add     arg
+000000r 3                           bcc     @Done
+000000r 3                           inx
+000000r 3                   @Done:
+000000r 3                       .endif
+000000r 3               .endmacro
+000000r 3               
+000000r 3               .macro  subax   arg
+000000r 3                       .if (.match (.left (1, {arg}), #))
+000000r 3                           ; immediate mode
+000000r 3                           .error "NOT DEFINED"
+000000r 3                           ; lda     #<(.right (.tcount ({arg})-1, {arg}))
+000000r 3                           ; ldx     #>(.right (.tcount ({arg})-1, {arg}))
+000000r 3                       .else
+000000r 3                           ; assume absolute or zero page
+000000r 3                           sub     arg
+000000r 3                           bsc     @Done
+000000r 3                           dex
+000000r 3                   @Done:
+000000r 3                       .endif
+000000r 3               .endmacro
+000000r 3               
+000000r 3               .macro  inc16   arg
+000000r 3                       .local  Skip
+000000r 3                       inc     arg
+000000r 3                       bne     Skip
+000000r 3                       inc     1+(arg)
+000000r 3               Skip:
+000000r 3               .endmacro
+000000r 3               
+000000r 3               .endif  ; NOT INC_HELPERS_S
+000000r 3               
+000000r 2               .import __DISP_START__
+000000r 2               .import __DISP_SIZE__
+000000r 2               
+000000r 2               ;*------------------------------------------------------------------*
+000000r 2               ;*                             Display                              *
+000000r 2               ;*------------------------------------------------------------------*
+000000r 2               .scope  Display
+000000r 2               Width = 40
+000000r 2               Height = 25
+000000r 2               Base = __DISP_START__
+000000r 2               Top = __DISP_START__ + __DISP_SIZE__ - 1
+000000r 2               
+000000r 2               .zeropage
+000000r 2  00 00        CurAdr: .word   0
+000002r 2               
+000002r 2               .code
+000000r 2               .proc   Init
+000000r 2  A9 rr A2 rr          ldax    #Base
+000004r 2  85 rr 86 rr          stax    CurAdr
+000008r 2  60                   rts
+000009r 2               .endproc
+000009r 2               
+000009r 2               .proc   IncCur
+000009r 2  A5 rr                lda     CurAdr + 1
+00000Br 2  C9 rr                cmp     #>Top
+00000Dr 2  90 11                blt     @Inc
+00000Fr 2  A5 rr                lda     CurAdr
+000011r 2  C9 rr                cmp     #<Top
+000013r 2  90 0B                blt     @Inc
+000015r 2  A9 rr A2 rr          ldax    #Base
+000019r 2  85 rr 86 rr          stax    CurAdr
+00001Dr 2  B8 50 06             bra     Done
+000020r 2  E6 rr D0 02  @Inc:   inc16   CurAdr
+000024r 2  E6 rr        
+000026r 2  60           Done:  rts
+000027r 2               .endproc
+000027r 2               
+000027r 2               .proc   PutC
+000027r 2  A2 00                ldx     #0
+000029r 2  A1 rr                lda     (KArg,x)
+00002Br 2  81 rr                sta     (CurAdr,x)
+00002Dr 2  20 rr rr             jsr     IncCur
+000030r 2  60                   rts
+000031r 2               .endproc
+000031r 2               
+000031r 2               .proc   PutS
+000031r 2  A2 00                ldx     #0
+000033r 2  A0 00                ldy     #0
+000035r 2  B1 rr                lda     (KArg),y
+000037r 2  F0 0E                bze     @Done
+000039r 2  81 rr        @Loop:  sta     (CurAdr,x)
+00003Br 2  20 rr rr             jsr     IncCur
+00003Er 2  C0 FF                cpy     #$FF
+000040r 2  F0 05                beq     @Done
+000042r 2  C8                   iny
+000043r 2  B1 rr                lda     (KArg),y
+000045r 2  D0 F2                bnz     @Loop
+000047r 2  60           @Done:  rts
+000048r 2               .endproc
+000048r 2               .endscope
+000048r 2               
+000048r 2               .rodata
+000000r 2               CharArr:
+000000r 2  00 01 02 03  .repeat 256, I
+000004r 2  04 05 06 07  
+000008r 2  08 09 0A 0B  
+000100r 2               .byte   I
+000100r 2               .endrep
+000100r 2               
+000100r 2               .endif  ; NOT INC_DISPLAY_S
+000100r 2               
+000100r 1               .include "tasking.s"
+000100r 2               .ifndef INC_TASKING_S
+000100r 2               INC_TASKING_S = 1
+000100r 2               
+000100r 2               .include "helpers.s"
+000100r 3               .ifndef INC_HELPERS_S
+000100r 3               INC_HELPERS_S = 1
+000100r 3               
+000100r 3               ;*------------------------------------------------------------------*
+000100r 3               ;*                             Helpers                              *
+000100r 3               ;*------------------------------------------------------------------*
+000100r 3               .code
+000100r 3               .macro  bra     arg
+000100r 3                       clv
+000100r 3                       bvc     arg
+000100r 3               .endmacro
+000100r 3               
+000100r 3               .macro  ldax    arg
+000100r 3                       .if (.match (.left (1, {arg}), #))
+000100r 3                           ; immediate mode
+000100r 3                           lda     #<(.right (.tcount ({arg})-1, {arg}))
+000100r 3                           ldx     #>(.right (.tcount ({arg})-1, {arg}))
+000100r 3                       .else
+000100r 3                           ; assume absolute or zero page
+000100r 3                           lda     arg
+000100r 3                           ldx     1+(arg)
+000100r 3                       .endif
+000100r 3               .endmacro
+000100r 3               
+000100r 3               .macro  stax    arg
+000100r 3                       ; assume absolute or zero page
+000100r 3                       sta     arg
+000100r 3                       stx     1+(arg)
+000100r 3               .endmacro
+000100r 3               
+000100r 3               .macro  addax   arg
+000100r 3                       .if (.match (.left (1, {arg}), #))
+000100r 3                           ; immediate mode
+000100r 3                           .error "NOT DEFINED"
+000100r 3                           ; lda     #<(.right (.tcount ({arg})-1, {arg}))
+000100r 3                           ; ldx     #>(.right (.tcount ({arg})-1, {arg}))
+000100r 3                       .else
+000100r 3                           ; assume absolute or zero page
+000100r 3                           add     arg
+000100r 3                           bcc     @Done
+000100r 3                           inx
+000100r 3                   @Done:
+000100r 3                       .endif
+000100r 3               .endmacro
+000100r 3               
+000100r 3               .macro  subax   arg
+000100r 3                       .if (.match (.left (1, {arg}), #))
+000100r 3                           ; immediate mode
+000100r 3                           .error "NOT DEFINED"
+000100r 3                           ; lda     #<(.right (.tcount ({arg})-1, {arg}))
+000100r 3                           ; ldx     #>(.right (.tcount ({arg})-1, {arg}))
+000100r 3                       .else
+000100r 3                           ; assume absolute or zero page
+000100r 3                           sub     arg
+000100r 3                           bsc     @Done
+000100r 3                           dex
+000100r 3                   @Done:
+000100r 3                       .endif
+000100r 3               .endmacro
+000100r 3               
+000100r 3               .macro  inc16   arg
+000100r 3                       .local  Skip
+000100r 3                       inc     arg
+000100r 3                       bne     Skip
+000100r 3                       inc     1+(arg)
+000100r 3               Skip:
+000100r 3               .endmacro
+000100r 3               
+000100r 3               .endif  ; NOT INC_HELPERS_S
+000100r 3               
+000100r 2               ; .import __STACK_START__
+000100r 2               ; .import __STACK_SIZE__
+000100r 2               
+000100r 2               __STACK_START__ = $1000
+000100r 2               __STECK_SIZE__ = $1000
+000100r 2               
+000100r 2               ;*------------------------------------------------------------------*
+000100r 2               ;*                             Tasking                              *
+000100r 2               ;*------------------------------------------------------------------*
+000100r 2               .scope Tasking
+000100r 2               TskCnt = 4
+000100r 2               .if TskCnt > $7F
+000100r 2               .error  "Too many tasks"
+000100r 2               .endif
+000100r 2               
+000100r 2               .zeropage
+000002r 2  00           CurTsk: .byte 0
+000003r 2               
+000003r 2               .repeat TskCnt, I
+000003r 2               .ident (.sprintf ("S%02xBas", I)) = __STACK_START__ + (I * (__STECK_SIZE__ / TskCnt))
+000003r 2               .ident (.sprintf ("S%02xTop", I)) = __STACK_START__ + ((I + 1) * (__STECK_SIZE__ / TskCnt)) - 1
+000003r 2               .endrep
+000003r 2               
+000003r 2               .data
+000000r 2               SBases:
+000000r 2  00 10 00 14  .repeat TskCnt, I
+000004r 2  00 18 00 1C  
+000008r 2                       .addr   .ident (.sprintf ("S%02xBas", I))
+000008r 2               .endrep
+000008r 2               
+000008r 2               STops:
+000008r 2  FF 13 FF 17  .repeat TskCnt, I
+00000Cr 2  FF 1B FF 1F  
+000010r 2                       .addr   .ident (.sprintf ("S%02xTop", I))
+000010r 2               .endrep
+000010r 2               
+000010r 2               .zeropage
+000003r 2               Sps:
+000003r 2  00 00 00 00  .repeat TskCnt, I
+000007r 2  00 00 00 00  
+00000Br 2                       .addr   0
+00000Br 2               .endrep
+00000Br 2               .rodata   ; Loadable data for Sps
+000100r 2               SpsD:
+000100r 2  FF 13 FF 17  .repeat TskCnt, I
+000104r 2  FF 1B FF 1F  
+000108r 2                       .addr   .ident (.sprintf ("S%02xTop", I))
+000108r 2               .endrep
+000108r 2               
+000108r 2               .code
+000048r 2               .macro  tpha
+000048r 2                       sta     Reg0
+000048r 2               
+000048r 2                       lda     <Tasking::CurTsk
+000048r 2                       asl     A
+000048r 2                       sta     <Tasking::CurTsk
+000048r 2                       ldx     <Tasking::CurTsk
+000048r 2               
+000048r 2                       lda     Reg0
+000048r 2                       sta     (Tasking::Sps,x)
+000048r 2               
+000048r 2                       dec     <Tasking::Sps,x
+000048r 2               
+000048r 2                       lda     <Tasking::CurTsk
+000048r 2                       lsr     A
+000048r 2                       sta     <Tasking::CurTsk
+000048r 2               .endmacro
+000048r 2               
+000048r 2               .macro  tpla
+000048r 2                       lda     <Tasking::CurTsk
+000048r 2                       asl     A
+000048r 2                       sta     <Tasking::CurTsk
+000048r 2                       ldx     <Tasking::CurTsk
+000048r 2               
+000048r 2                       lda     (Tasking::Sps,x)
+000048r 2                       sta     Reg0
+000048r 2               
+000048r 2                       inc     <Tasking::Sps,x
+000048r 2               
+000048r 2                       lda     <Tasking::CurTsk
+000048r 2                       lsr     A
+000048r 2                       sta     <Tasking::CurTsk
+000048r 2               
+000048r 2                       lda     Reg0
+000048r 2               .endmacro
+000048r 2               
+000048r 2               .code
+000048r 2               
+000048r 2               .proc   Init
+000048r 2  A2 00                ldx     #0
+00004Ar 2  BD rr rr     @Loop:  lda     SpsD,x
+00004Dr 2  95 rr                sta     Sps,x
+00004Fr 2  E8                   inx
+000050r 2  E0 08                cpx     #2 * TskCnt
+000052r 2  90 F6                blt     @Loop
+000054r 2               
+000054r 2  A9 00                lda     #0
+000056r 2  85 rr                sta     CurTsk
+000058r 2  60                   rts
+000059r 2               .endproc
+000059r 2               
+000059r 2               .endscope
+000059r 2               
+000059r 2               .endif  ; NOT INC_TASKING_S
+000059r 2               
+000059r 1               
+000059r 1               ;*------------------------------------------------------------------*
+000059r 1               ;*                              System                              *
+000059r 1               ;*------------------------------------------------------------------*
+000059r 1               .zeropage
+00000Br 1  00           Reg0:   .byte   0
+00000Cr 1  00           Reg1:   .byte   0
+00000Dr 1  00           Reg2:   .byte   0
+00000Er 1  00           Reg3:   .byte   0
+00000Fr 1  00 00        KArg:   .word   0
+000011r 1               
+000011r 1               .data
+000010r 1               
+000010r 1               .rodata
+000108r 1  57 65 6C 63  WelStr: .asciiz "Welcome to"
+00010Cr 1  6F 6D 65 20  
+000110r 1  74 6F 00     
+000113r 1  30 78 36 35  OsStr:  .asciiz "0x6502"
+000117r 1  30 32 00     
+00011Ar 1  42 79 00     ByStr:  .asciiz "By"
+00011Dr 1  30 78 54 4A  AutStr: .asciiz "0xTJ"
+000121r 1  00           
+000122r 1               
+000122r 1               ;*------------------------------------------------------------------*
+000122r 1               ;*                               Init                               *
+000122r 1               ;*------------------------------------------------------------------*
+000122r 1               .code
+000059r 1  78           init:   sei
+00005Ar 1  20 rr rr             jsr     Display::Init
+00005Dr 1               
+00005Dr 1                       ; Show boot message.
+00005Dr 1  A9 rr A2 rr          ldax    #Display::Base + (11 * 40) + 11
+000061r 1  85 rr 86 rr          stax    Display::CurAdr
+000065r 1  A9 rr A2 rr          ldax    #WelStr
+000069r 1  85 rr 86 rr          stax    KArg
+00006Dr 1  20 rr rr             jsr     Display::PutS
+000070r 1  A9 rr A2 rr          ldax    #CharArr + ' '
+000074r 1  85 rr 86 rr          stax    KArg
+000078r 1  20 rr rr             jsr     Display::PutC
+00007Br 1  A9 rr A2 rr          ldax    #OsStr
+00007Fr 1  85 rr 86 rr          stax    KArg
+000083r 1  20 rr rr             jsr     Display::PutS
+000086r 1  A9 rr A2 rr          ldax    #Display::Base + (12 * 40) + 16
+00008Ar 1  85 rr 86 rr          stax    Display::CurAdr
+00008Er 1  A9 rr A2 rr          ldax    #ByStr
+000092r 1  85 rr 86 rr          stax    KArg
+000096r 1  20 rr rr             jsr     Display::PutS
+000099r 1  A9 rr A2 rr          ldax    #CharArr + ' '
+00009Dr 1  85 rr 86 rr          stax    KArg
+0000A1r 1  20 rr rr             jsr     Display::PutC
+0000A4r 1  A9 rr A2 rr          ldax    #AutStr
+0000A8r 1  85 rr 86 rr          stax    KArg
+0000ACr 1  20 rr rr             jsr     Display::PutS
+0000AFr 1                       ; Done showing boot message.
+0000AFr 1               
+0000AFr 1                       ; Setup tasking
+0000AFr 1  20 rr rr             jsr Tasking::Init
+0000B2r 1  A9 11                lda    #$11
+0000B4r 1  85 rr A5 rr          tpha
+0000B8r 1  0A 85 rr A6  
+0000BCr 1  rr A5 rr 81  
+0000C8r 1  A9 15                lda    #$15
+0000CAr 1  85 rr A5 rr          tpha
+0000CEr 1  0A 85 rr A6  
+0000D2r 1  rr A5 rr 81  
+0000DEr 1  A9 2C                lda    #44
+0000E0r 1  A5 rr 0A 85          tpla
+0000E4r 1  rr A6 rr A1  
+0000E8r 1  rr 85 rr F6  
+0000F4r 1               
+0000F4r 1  4C rr rr             jmp     *
+0000F7r 1               
+0000F7r 1               
+0000F7r 1               ;*------------------------------------------------------------------*
+0000F7r 1               ;*                    Interrupt Service Routine                     *
+0000F7r 1               ;*------------------------------------------------------------------*
+0000F7r 1               .code
+0000F7r 1  48           irq:    pha                 ; Save registers to current stack
+0000F8r 1  8A                   txa
+0000F9r 1  48                   pha
+0000FAr 1  98                   tya
+0000FBr 1  48                   pha
+0000FCr 1               
+0000FCr 1  68                   pla
+0000FDr 1  A8                   tay
+0000FEr 1  68                   pla
+0000FFr 1  AA                   tax
+000100r 1  68                   pla
+000101r 1  40                   rti
+000102r 1               
+000102r 1               .segment "VECTOR"
+000000r 1  rr rr                .word init
+000002r 1  rr rr                .word init
+000004r 1  rr rr                .word irq
+000004r 1               

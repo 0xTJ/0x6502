@@ -81,11 +81,6 @@ resetdisp   macro
             sta     dispcur_h
             endm
             
-flushkb     macro
-            lda     keybrdtail
-            sta     keybrdhead
-            endm
-            
 inccur      ldx     dispcur_l       ; ARGS: N/A, STACK: 2
             ldy     dispcur_h
             cpy     #hi screentop
@@ -111,7 +106,13 @@ putchar     ldx     #0              ; ARGS: Char, STACK: 2
 
 ;*------------------------------------------------------------------*
 ;*                             Keyboard                             *
-;*------------------------------------------------------------------*          
+;*------------------------------------------------------------------*      
+            
+flushkb     macro
+            lda     keybrdtail
+            sta     keybrdhead
+            endm
+            
             bss
 getchar_buf rmb     1
             code           

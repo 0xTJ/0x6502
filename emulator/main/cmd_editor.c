@@ -16,6 +16,7 @@ static void register_address();
 static void register_write();
 static void register_read();
 static void register_hex();
+static void register_bin();
 static void register_run();
 
 void register_editor()
@@ -24,6 +25,7 @@ void register_editor()
     register_read();
     register_write();
     register_hex();
+    register_bin();
     register_run();
 }
 
@@ -182,6 +184,55 @@ static void register_write()
         .hint = NULL,
         .func = &write,
         .argtable = &write_args
+    };
+    ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
+}
+
+static struct {
+    struct arg_int *addr;
+    struct arg_end *end;
+} bin_args;
+
+static int bin(int argc, char** argv)
+{
+    int nerrors = arg_parse(argc, argv, (void**) &bin_args);
+    if (nerrors != 0) {
+        arg_print_errors(stderr, bin_args.end, argv[0]);
+        return 1;
+    }
+    uint16_t addr = editor_addr;
+    if (bin_args.addr->count) {
+        addr = bin_args.addr->ival[0];
+    }
+    while (true) {
+        char buf[3] = {0};
+        buf[0] = fgetc(stdin);
+        if (buf[0] == '\t')
+            break;
+        else if (!isalnum((unsigned char) buf[0]))
+            continue;
+        buf[1] = fgetc(stdin);
+        if (buf[1] == '\t')
+            break;
+        editor_write(addr, strtoul(buf, NULL, 16));
+        addr++;
+    }
+    editor_addr = addr;
+    return 0;
+}
+
+static void register_bin()
+{
+    bin_args.addr =
+            arg_int0("a", "address", "<a>", "Address as write base");
+    bin_args.end = arg_end(1);
+
+    const esp_console_cmd_t cmd = {
+        .command = "bin",
+        .help = "Write binary to memory. ",
+        .hint = NULL,
+        .func = &bin,
+        .argtable = &bin_args
     };
     ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
 }

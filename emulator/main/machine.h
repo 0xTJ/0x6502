@@ -18,21 +18,20 @@
 #define SCREEN_HEIGHT   (25)
 #define SCREEN_WIDTH    (40)
 
-enum PageType { NONE = 0, ROM, DRAM, SRAM, IO };
+enum MemType { NONE = 0, ROM, RAM, IO };
 
-struct PageDef {
-    uint8_t page;
-    enum PageType type;
+struct MemConf {
+    uint16_t start;
+    uint16_t size;
+    enum MemType type;
     uint8_t *array;
-    uint16_t array_base;
     void (*ioInitFunc)();
-    uint8_t (*ioReadFunc)(uint8_t addr);
-    void (*ioWriteFunc)(uint8_t addr, uint8_t value);
+    uint8_t (*ioReadFunc)(uint16_t address);
+    void (*ioWriteFunc)(uint16_t address, uint8_t value);
 };
 
 extern bool is_running;
 extern const struct PageDef *defd_pages[];
-extern const struct PageDef page_defs[];
 
 void setupMachine();
 void resetMachine();

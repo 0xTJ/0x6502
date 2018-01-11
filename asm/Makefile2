@@ -1,0 +1,4 @@
+0x6502.o:	0x6502.s C:\esp32\0x6502\tools\cc65\asminc/generic.mac C:\esp32\0x6502\tools\cc65\asminc/longbranch.mac helpers.s
+
+0x6502.s C:\esp32\0x6502\tools\cc65\asminc/generic.mac C:\esp32\0x6502\tools\cc65\asminc/longbranch.mac helpers.s:
+
